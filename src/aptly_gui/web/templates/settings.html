@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}Settings{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Settings{% endtrans %}</h1>
+<p class="lead">{% trans %}These apply to the whole instance. Per-user preferences arrive with authentication.{% endtrans %}</p>
+
+{% if saved %}
+<div class="notice">{% trans %}Settings saved.{% endtrans %}</div>
+{% endif %}
+
+<form method="post" action="/settings" class="panel">
+  <div class="field">
+    <label for="language">{% trans %}Interface language{% endtrans %}</label>
+    <select name="language" id="language">
+      {% for code, label in languages.items() %}
+        <option value="{{ code }}" {{ 'selected' if code == locale }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <p class="hint">{% trans %}Untranslated text falls back to English.{% endtrans %}</p>
+  </div>
+
+  <button type="submit" class="primary">{% trans %}Save{% endtrans %}</button>
+</form>
+
+<h2>{% trans %}Connection{% endtrans %}</h2>
+<div class="panel">
+  <dl class="meta">
+    <dt>{% trans %}Aptly API{% endtrans %}</dt>
+    <dd><code>{{ aptly_target }}</code></dd>
+    <dt>{% trans %}Aptly version{% endtrans %}</dt>
+    <dd>{{ s.version or '—' }}</dd>
+    <dt>{% trans %}Database{% endtrans %}</dt>
+    <dd><code>{{ database_url }}</code></dd>
+  </dl>
+  <p class="hint">{% trans %}Set with environment variables; see the README.{% endtrans %}</p>
+</div>
+
+<h2>{% trans %}Disk space{% endtrans %}</h2>
+<div class="panel">
+  {% if s.storage %}
+  <dl class="meta">
+    <dt>{% trans %}Total{% endtrans %}</dt><dd>{{ s.storage.total_mb | gib }}</dd>
+    <dt>{% trans %}Free{% endtrans %}</dt><dd>{{ s.storage.free_mb | gib }}</dd>
+    <dt>{% trans %}Used{% endtrans %}</dt><dd>{{ '%.1f' | format(s.storage.percent_full) }} %</dd>
+  </dl>
+  {% endif %}
+  <p class="hint">{% trans %}Reported by aptly for the filesystem holding its rootDir. A Docker volume has no quota of its own, so on a shared filesystem this number covers everything else stored there too.{% endtrans %}</p>
+</div>
+{% endblock %}

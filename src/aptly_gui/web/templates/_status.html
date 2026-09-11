@@ -1,17 +1,17 @@
 <div id="status" hx-get="/partials/status" hx-trigger="every 15s" hx-swap="outerHTML"
      class="status {{ 'status-stale' if cached.stale else 'status-ok' }}">
   {% if cached.stale %}
-    <strong>⚠ Aptly je nedostupné</strong>
-    <span>Zobrazená data jsou z {{ s.fetched_at | age }}, ne aktuální stav.</span>
+    <strong>{% trans %}Aptly is unreachable{% endtrans %}</strong>
+    <span>{% trans age=s.fetched_at | age %}Showing the last known state from {{ age }}, not what is there now.{% endtrans %}</span>
     <code>{{ cached.error }}</code>
   {% else %}
-    <strong>✓ Aptly {{ s.version }}</strong>
-    <span>Načteno {{ s.fetched_at | age }}</span>
+    <strong>{% trans version=s.version %}Aptly {{ version }}{% endtrans %}</strong>
+    <span>{% trans age=s.fetched_at | age %}Read {{ age }}{% endtrans %}</span>
     {% if s.storage %}
-      <span class="space">
-        Volno {{ s.storage.free_mb | gib }} z {{ s.storage.total_mb | gib }}
+      <span class="space" title="{% trans %}Free space on the filesystem holding aptly's rootDir, not a quota for aptly itself{% endtrans %}">
+        {% trans free=s.storage.free_mb | gib, total=s.storage.total_mb | gib %}{{ free }} free of {{ total }}{% endtrans %}
         <span class="bar" role="img"
-              aria-label="Zaplněno {{ '%.0f' | format(s.storage.percent_full) }} %">
+              aria-label="{% trans percent='%.0f' | format(s.storage.percent_full) %}{{ percent }} % full{% endtrans %}">
           <span style="width: {{ '%.1f' | format(s.storage.percent_full) }}%"></span>
         </span>
         {{ '%.0f' | format(s.storage.percent_full) }} %

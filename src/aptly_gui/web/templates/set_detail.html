@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ mirror_set.name }} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{{ mirror_set.name }}</h1>
+<dl class="meta">
+  <dt>{% trans %}Upstream{% endtrans %}</dt><dd><code>{{ mirror_set.archive_url }}</code></dd>
+  <dt>{% trans %}Publish prefix{% endtrans %}</dt><dd><code>{{ mirror_set.publish_prefix }}</code></dd>
+  <dt>{% trans %}Signing key{% endtrans %}</dt><dd>{{ mirror_set.signing_key or '—' }}</dd>
+  {% if mirror_set.filter %}<dt>{% trans %}Filter{% endtrans %}</dt><dd><code>{{ mirror_set.filter }}</code></dd>{% endif %}
+</dl>
+
+<form method="post" action="/sets/{{ mirror_set.id }}/update">
+  <button type="submit" class="primary">{% trans %}Sync and snapshot{% endtrans %}</button>
+</form>
+<p class="lead">{% trans %}This downloads updates and freezes them as a snapshot set. Nothing reaches clients until you publish that set below.{% endtrans %}</p>
+
+<h2>{% trans %}Mirrors{% endtrans %}</h2>
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans %}Suite{% endtrans %}</th>
+        {% for component in mirror_set.components %}<th>{{ component }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for suite in mirror_set.suites %}
+      <tr>
+        <th scope="row">{{ suite }}</th>
+        {% for component in mirror_set.components %}
+          {% set name = mirror_set.mirror_name(suite, component) %}
+          <td>
+            {% if name in s.mirror_names %}
+              <span class="tag tag-ok">{% trans %}present{% endtrans %}</span>
+            {% else %}
+              <span class="tag tag-bad">{% trans %}missing{% endtrans %}</span>
+            {% endif %}
+          </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>{% trans %}Snapshot sets{% endtrans %}</h2>
+{% if snapshot_sets %}
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans %}Taken{% endtrans %}</th>
+        <th>{% trans %}State{% endtrans %}</th>
+        <th>{% trans %}Snapshots{% endtrans %}</th>
+        <th>{% trans %}Publish{% endtrans %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for snap_set in snapshot_sets %}
+      <tr>
+        <th scope="row">{{ snap_set.taken_at | age }}</th>
+        <td>
+          {% if snap_set.state == complete_state %}
+            <span class="tag tag-ok">{% trans %}complete{% endtrans %}</span>
+          {% else %}
+            <span class="tag tag-warn">{% trans %}incomplete{% endtrans %}</span>
+          {% endif %}
+        </td>
+        <td>{{ snap_set.snapshots | length }}</td>
+        <td>
+          {% if snap_set.state == complete_state %}
+          <form method="post" action="/sets/{{ mirror_set.id }}/switch">
+            <input type="hidden" name="snapshot_set_id" value="{{ snap_set.id }}">
+            <button type="submit">{% trans %}Publish this set{% endtrans %}</button>
+          </form>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="lead">{% trans %}Publishing an older set is a rollback: aptly snapshots are immutable, so it only changes which index clients see.{% endtrans %}</p>
+{% else %}
+  <p class="empty">{% trans %}No snapshot sets yet. Run a sync to create one.{% endtrans %}</p>
+{% endif %}
+
+<h2>{% trans %}Recent jobs{% endtrans %}</h2>
+{% if jobs %}
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>{% trans %}Type{% endtrans %}</th>
+        <th>{% trans %}State{% endtrans %}</th>
+        <th>{% trans %}Started{% endtrans %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr>
+        <th scope="row"><a href="/jobs/{{ job.id }}">{{ job.id }}</a></th>
+        <td>{{ job.type | job_type }}</td>
+        <td>{{ job.state | job_state }}</td>
+        <td>{{ job.started_at | age }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="empty">{% trans %}No jobs yet.{% endtrans %}</p>
+{% endif %}
+{% endblock %}

@@ -1,36 +1,48 @@
 {% extends "base.html" %}
-{% block title %}Mirrory — aptly-gui{% endblock %}
+{% block title %}{% trans %}Mirrors{% endtrans %} — aptly-gui{% endblock %}
 
 {% block content %}
-<h1>Mirrory</h1>
-<p class="lead">Všechny mirrory v aptly. Seskupení do mirror setů a tlačítko Aktualizovat
-   přijdou ve v0.2.</p>
+<h1>{% trans %}Mirrors{% endtrans %}</h1>
+<p class="lead">{% trans %}Every mirror in aptly. Those belonging to a mirror set can be updated and rolled back; the rest are shown but never touched.{% endtrans %}</p>
 
 {% if s.mirrors %}
 <div class="scroll">
   <table>
     <thead>
       <tr>
-        <th>Název</th><th>Upstream</th><th>Distribuce</th>
-        <th>Komponenty</th><th>Architektury</th><th>Filtr</th><th>Poslední sync</th>
+        <th>{% trans %}Name{% endtrans %}</th>
+        <th>{% trans %}Managed{% endtrans %}</th>
+        <th>{% trans %}Upstream{% endtrans %}</th>
+        <th>{% trans %}Distribution{% endtrans %}</th>
+        <th>{% trans %}Components{% endtrans %}</th>
+        <th>{% trans %}Architectures{% endtrans %}</th>
+        <th>{% trans %}Filter{% endtrans %}</th>
+        <th>{% trans %}Last sync{% endtrans %}</th>
       </tr>
     </thead>
     <tbody>
       {% for m in s.mirrors %}
       <tr>
         <th scope="row">{{ m.name }}</th>
+        <td>
+          {% if m.name in managed_mirrors %}
+            <span class="tag tag-ok">{{ managed_mirrors[m.name] }}</span>
+          {% else %}
+            <span class="tag">{% trans %}unmanaged{% endtrans %}</span>
+          {% endif %}
+        </td>
         <td class="wrap"><code>{{ m.archive_url }}</code></td>
         <td>{{ m.distribution }}</td>
         <td>{{ m.components | join(', ') or '—' }}</td>
         <td>{{ m.architectures | join(', ') or '—' }}</td>
         <td>{% if m.filter %}<code>{{ m.filter }}</code>{% else %}—{% endif %}</td>
-        <td>{{ m.last_download | age }}</td>
+        <td>{% if m.last_download %}{{ m.last_download | age }}{% else %}<span class="tag tag-bad">{% trans %}never{% endtrans %}</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% else %}
-  <p class="empty">Žádné mirrory.</p>
+  <p class="empty">{% trans %}No mirrors.{% endtrans %}</p>
 {% endif %}
 {% endblock %}

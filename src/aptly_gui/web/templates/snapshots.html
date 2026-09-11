@@ -1,16 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Snapshoty — aptly-gui{% endblock %}
+{% block title %}{% trans %}Snapshots{% endtrans %} — aptly-gui{% endblock %}
 
 {% block content %}
-<h1>Snapshoty</h1>
-<p class="lead">Nepublikovaný snapshot nic neškodí, ale ani nic nedělá. Místo uvolní až
-   <code>db cleanup</code>, ne samotné smazání — to je ve v0.3.</p>
+<h1>{% trans %}Snapshots{% endtrans %}</h1>
+<p class="lead">{% trans %}Deleting a snapshot frees no disk space on its own; the pool is only reclaimed by a database cleanup.{% endtrans %}</p>
 
 {% if s.snapshots %}
 <div class="scroll">
   <table>
     <thead>
-      <tr><th>Název</th><th>Vytvořen</th><th>Popis</th><th>Stav</th></tr>
+      <tr>
+        <th>{% trans %}Name{% endtrans %}</th>
+        <th>{% trans %}Created{% endtrans %}</th>
+        <th>{% trans %}Description{% endtrans %}</th>
+        <th>{% trans %}State{% endtrans %}</th>
+      </tr>
     </thead>
     <tbody>
       {% for snap in s.snapshots | sort(attribute='name') %}
@@ -20,9 +24,9 @@
         <td class="wrap">{{ snap.description or '—' }}</td>
         <td>
           {% if snap.name in s.published_snapshot_names %}
-            <span class="tag tag-ok">publikovaný</span>
+            <span class="tag tag-ok">{% trans %}published{% endtrans %}</span>
           {% else %}
-            <span class="tag">nepublikovaný</span>
+            <span class="tag">{% trans %}unpublished{% endtrans %}</span>
           {% endif %}
         </td>
       </tr>
@@ -31,6 +35,6 @@
   </table>
 </div>
 {% else %}
-  <p class="empty">Žádné snapshoty.</p>
+  <p class="empty">{% trans %}No snapshots.{% endtrans %}</p>
 {% endif %}
 {% endblock %}

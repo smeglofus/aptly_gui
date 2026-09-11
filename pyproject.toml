@@ -8,6 +8,11 @@ dependencies = [
     "fastapi>=0.115",
     "jinja2>=3.1",
     "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.20",
+    "alembic>=1.13",
+    "babel>=2.16",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +32,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "aptly_gui.web" = ["templates/*.html", "static/*"]
+"aptly_gui.i18n" = ["locales/*/LC_MESSAGES/*.po", "locales/*/LC_MESSAGES/*.mo"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

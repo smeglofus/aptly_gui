@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{% trans id=job.id %}Job {{ id }}{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans id=job.id %}Job {{ id }}{% endtrans %}</h1>
+<p class="lead">
+  {{ job.type | job_type }}
+  {% if job.mirror_set %}· <a href="/sets/{{ job.mirror_set.id }}">{{ job.mirror_set.name }}</a>{% endif %}
+  · {{ job.author }}
+</p>
+
+{% include "_job_progress.html" %}
+{% endblock %}

@@ -32,6 +32,10 @@ class AptlyState:
         return {s.name for s in self.snapshots}
 
     @property
+    def mirror_names(self) -> set[str]:
+        return {m.name for m in self.mirrors}
+
+    @property
     def unpublished_snapshots(self) -> list[Snapshot]:
         published = self.published_snapshot_names
         return [s for s in self.snapshots if s.name not in published]

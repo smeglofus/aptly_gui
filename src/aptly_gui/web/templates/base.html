@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="cs">
+<html lang="{{ locale }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}aptly-gui{% endblock %}</title>
+  <title>{% block title %}{% trans %}aptly-gui{% endtrans %}{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.4/htmx.min.js"></script>
 </head>
@@ -11,14 +11,17 @@
   <header class="topbar">
     <a class="brand" href="/">aptly<span>-gui</span></a>
     <nav>
-      <a href="/" class="{{ 'on' if page == 'dashboard' }}">Přehled</a>
-      <a href="/mirrors" class="{{ 'on' if page == 'mirrors' }}">Mirrory</a>
-      <a href="/snapshots" class="{{ 'on' if page == 'snapshots' }}">Snapshoty</a>
-      <a href="/publications" class="{{ 'on' if page == 'publications' }}">Publikace</a>
+      <a href="/" class="{{ 'on' if page == 'dashboard' }}">{% trans %}Overview{% endtrans %}</a>
+      <a href="/sets" class="{{ 'on' if page == 'sets' }}">{% trans %}Mirror sets{% endtrans %}</a>
+      <a href="/mirrors" class="{{ 'on' if page == 'mirrors' }}">{% trans %}Mirrors{% endtrans %}</a>
+      <a href="/snapshots" class="{{ 'on' if page == 'snapshots' }}">{% trans %}Snapshots{% endtrans %}</a>
+      <a href="/publications" class="{{ 'on' if page == 'publications' }}">{% trans %}Publications{% endtrans %}</a>
+      <a href="/jobs" class="{{ 'on' if page == 'jobs' }}">{% trans %}Jobs{% endtrans %}</a>
+      <a href="/settings" class="{{ 'on' if page == 'settings' }}">{% trans %}Settings{% endtrans %}</a>
     </nav>
-    <form action="{{ request.url.path }}" method="get" class="refresh">
+    <form action="{{ request.url.path }}" method="get">
       <input type="hidden" name="refresh" value="1">
-      <button type="submit">Načíst znovu</button>
+      <button type="submit">{% trans %}Reload{% endtrans %}</button>
     </form>
   </header>
 
@@ -29,7 +32,8 @@
   </main>
 
   <footer>
-    Read-only přehled (v0.1). Zápisové akce přijdou ve v0.2.
+    {% trans %}Controlled updates and rollback are available from the mirror sets screen.{% endtrans %}
+    {% trans %}There is no authentication yet — keep this bound to loopback.{% endtrans %}
   </footer>
 </body>
 </html>

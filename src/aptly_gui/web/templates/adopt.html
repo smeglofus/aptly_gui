@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}Adopt existing mirrors{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Adopt existing mirrors{% endtrans %}</h1>
+<p class="lead">{% trans %}Adoption only records that these mirrors belong together. Nothing in aptly is created, changed or deleted.{% endtrans %}</p>
+
+{% if proposals %}
+  {% for p in proposals %}
+  <section class="panel">
+    <h2 style="margin-top:0">{{ p.name }}</h2>
+    <dl class="meta">
+      <dt>{% trans %}Upstream{% endtrans %}</dt><dd><code>{{ p.archive_url }}</code></dd>
+      <dt>{% trans %}Mirrors{% endtrans %}</dt><dd>{{ p.mirrors | length }}</dd>
+    </dl>
+
+    {% if not p.complete %}
+    <div class="notice">
+      {% trans %}Some suite and component combinations have no mirror. You can still adopt, but an update will stop on the missing ones.{% endtrans %}
+      <ul>{% for name in p.missing %}<li><code>{{ name }}</code></li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    {% if 'filter' in p.inconsistent %}
+    <div class="notice">{% trans %}These mirrors do not all use the same filter, so no filter has been pre-filled.{% endtrans %}</div>
+    {% endif %}
+
+    <form method="post" action="/sets/adopt">
+      <input type="hidden" name="name" value="{{ p.name }}">
+      <input type="hidden" name="archive_url" value="{{ p.archive_url }}">
+      <input type="hidden" name="suites" value="{{ p.suites | join(',') }}">
+      <input type="hidden" name="components" value="{{ p.components | join(',') }}">
+      <input type="hidden" name="architectures" value="{{ p.architectures | join(',') }}">
+      <input type="hidden" name="filter" value="{{ p.filter or '' }}">
+
+      <div class="field">
+        <label for="prefix-{{ loop.index }}">{% trans %}Publish prefix{% endtrans %}</label>
+        <input type="text" id="prefix-{{ loop.index }}" name="publish_prefix"
+               value="{{ p.publish_prefix or '' }}" required>
+        <p class="hint">{% trans %}Which publication this set feeds. aptly cannot tell us, so confirm it.{% endtrans %}</p>
+      </div>
+
+      <div class="field">
+        <label for="keyring-{{ loop.index }}">{% trans %}Keyrings{% endtrans %}</label>
+        <input type="text" id="keyring-{{ loop.index }}" name="keyrings" size="60"
+               value="{{ p.keyring_guess or '' }}">
+        <p class="hint">{% trans %}aptly forgets keyrings between updates, so they are stored here and sent again on every sync. Use the combined archive keyring; per-release ones often fail to verify.{% endtrans %}</p>
+      </div>
+
+      <div class="field">
+        <label for="signing-{{ loop.index }}">{% trans %}Signing key{% endtrans %}</label>
+        <input type="text" id="signing-{{ loop.index }}" name="signing_key" value="">
+        <p class="hint">{% trans %}Key id or e-mail used when publishing. The private key stays on the aptly side.{% endtrans %}</p>
+      </div>
+
+      <details>
+        <summary>{% trans %}Mirrors in this set{% endtrans %}</summary>
+        <ul>{% for name in p.mirrors %}<li><code>{{ name }}</code></li>{% endfor %}</ul>
+      </details>
+
+      <p><button type="submit" class="primary">{% trans %}Adopt this set{% endtrans %}</button></p>
+    </form>
+  </section>
+  {% endfor %}
+{% else %}
+  <p class="empty">{% trans %}No unmanaged mirrors follow the set-suite-component naming convention.{% endtrans %}</p>
+{% endif %}
+
+{% if leftovers %}
+<h2>{% trans %}Not grouped{% endtrans %}</h2>
+<p class="lead">{% trans %}These mirrors do not match the convention, either because their name does not end in suite and component or because they carry several components at once. They stay visible and untouched.{% endtrans %}</p>
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>{% trans %}Mirror{% endtrans %}</th>
+        <th>{% trans %}Distribution{% endtrans %}</th>
+        <th>{% trans %}Components{% endtrans %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in leftovers %}
+      <tr>
+        <th scope="row">{{ m.name }}</th>
+        <td>{{ m.distribution }}</td>
+        <td>{{ m.components | join(', ') or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

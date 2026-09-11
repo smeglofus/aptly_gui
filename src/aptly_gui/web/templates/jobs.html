@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}Jobs{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Jobs{% endtrans %}</h1>
+<p class="lead">{% trans %}One write job runs at a time. aptly keeps a single database, so running two sets at once would mean two writers into it.{% endtrans %}</p>
+
+{% if jobs %}
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>{% trans %}Type{% endtrans %}</th>
+        <th>{% trans %}Mirror set{% endtrans %}</th>
+        <th>{% trans %}State{% endtrans %}</th>
+        <th>{% trans %}Started{% endtrans %}</th>
+        <th>{% trans %}Author{% endtrans %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr>
+        <th scope="row"><a href="/jobs/{{ job.id }}">{{ job.id }}</a></th>
+        <td>{{ job.type | job_type }}</td>
+        <td>{{ job.mirror_set.name if job.mirror_set else '—' }}</td>
+        <td>{{ job.state | job_state }}</td>
+        <td>{{ job.started_at | age }}</td>
+        <td>{{ job.author }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="empty">{% trans %}No jobs yet.{% endtrans %}</p>
+{% endif %}
+{% endblock %}
