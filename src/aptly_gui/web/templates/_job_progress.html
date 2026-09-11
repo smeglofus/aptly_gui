@@ -2,11 +2,26 @@
 <div id="job-progress"
      {% if running %}hx-get="/partials/job/{{ job.id }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
   {% if job %}
-  <dl class="meta">
-    <dt>{% trans %}State{% endtrans %}</dt><dd>{{ job.state | job_state }}</dd>
-    <dt>{% trans %}Started{% endtrans %}</dt><dd>{{ job.started_at | age }}</dd>
-    {% if job.finished_at %}<dt>{% trans %}Finished{% endtrans %}</dt><dd>{{ job.finished_at | age }}</dd>{% endif %}
-  </dl>
+
+  {% set total = job.total_steps %}
+  {% set done = job.done_steps %}
+
+  <section class="joboverall {{ 'is-' ~ job.state }}">
+    <div class="joboverall-head">
+      <span class="jobstate">
+        {% if job.state == 'succeeded' %}✓{% elif job.state == 'failed' %}✕{% elif job.state == 'interrupted' %}⚠{% else %}●{% endif %}
+        {{ job.state | job_state }}
+      </span>
+      <span class="jobmeta">
+        {% if total %}{% trans done=done, total=total %}{{ done }} of {{ total }} steps{% endtrans %}{% endif %}
+        {% if job.started_at %}· {{ job.elapsed_seconds | duration }}{% endif %}
+      </span>
+    </div>
+    <span class="bar bar-wide">
+      <span class="{{ 'bad' if job.state == 'failed' }}"
+            style="width: {{ '%.1f' | format(job.percent) }}%"></span>
+    </span>
+  </section>
 
   {% if job.error %}
   <div class="alert"><strong>{% trans %}Error{% endtrans %}</strong><p>{{ job.error }}</p></div>
@@ -16,34 +31,59 @@
   <div class="notice">{% trans %}This job was interrupted by a restart. aptly forgets its task ids when it restarts, so what actually completed is read back from aptly rather than replayed.{% endtrans %}</div>
   {% endif %}
 
-  <div class="scroll">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>{% trans %}Step{% endtrans %}</th>
-          <th>{% trans %}State{% endtrans %}</th>
-          <th>{% trans %}Aptly task{% endtrans %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for step in job.steps %}
-        <tr>
-          <th scope="row">{{ step.position }}</th>
-          <td class="wrap">{{ step.description }}</td>
-          <td>
-            {% if step.state == 'succeeded' %}<span class="tag tag-ok">{{ step.state | job_state }}</span>
-            {% elif step.state == 'failed' %}<span class="tag tag-bad">{{ step.state | job_state }}</span>
-            {% else %}<span class="tag">{{ step.state | job_state }}</span>{% endif %}
-          </td>
-          <td>{{ step.aptly_task_id or '—' }}</td>
-        </tr>
-        {% if step.output_tail %}
-        <tr><td colspan="4" class="wrap"><code>{{ step.output_tail }}</code></td></tr>
+  <ol class="steps">
+    {% for step in job.steps %}
+    <li class="step step-{{ step.state }}">
+      <span class="step-mark" aria-hidden="true">
+        {% if step.state == 'succeeded' %}✓{% elif step.state == 'failed' %}✕{% elif step.state == 'running' %}▶{% else %}·{% endif %}
+      </span>
+      <div class="step-body">
+        <div class="step-head">
+          <span class="step-name">{{ step.description }}</span>
+          <span class="step-state tag {{ 'tag-ok' if step.state == 'succeeded' }}{{ 'tag-bad' if step.state == 'failed' }}">
+            {{ step.state | job_state }}
+          </span>
+          {% if step.started_at %}
+            <span class="step-time">{{ step.elapsed_seconds | duration }}</span>
+          {% endif %}
+        </div>
+
+        {% if step.has_progress %}
+        <div class="step-progress">
+          <span class="bar bar-wide">
+            <span style="width: {{ '%.1f' | format(step.percent) }}%"></span>
+          </span>
+          <div class="step-numbers">
+            <span><strong>{{ '%.0f' | format(step.percent) }} %</strong></span>
+            <span>{{ step.downloaded_bytes | bytes }} / {{ step.total_bytes | bytes }}</span>
+            <span>
+              {% trans done=step.done_packages, total=step.total_packages %}{{ done }} of {{ total }} packages{% endtrans %}
+            </span>
+            {% if step.bytes_per_second %}
+              <span>{{ step.bytes_per_second | bytes }}/s</span>
+            {% endif %}
+            {% if step.eta_seconds and step.state == 'running' %}
+              <span>{% trans eta=step.eta_seconds | duration %}{{ eta }} left{% endtrans %}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% elif step.state == 'running' %}
+          <p class="step-waiting">{% trans %}Waiting for aptly to report progress…{% endtrans %}</p>
         {% endif %}
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+
+        {% if step.output_tail %}
+        <details class="step-output">
+          <summary>{% trans %}Output{% endtrans %}</summary>
+          <pre><code>{{ step.output_tail }}</code></pre>
+        </details>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+
+  {% if not job.steps %}
+    <p class="empty">{% trans %}Waiting to start…{% endtrans %}</p>
+  {% endif %}
   {% endif %}
 </div>

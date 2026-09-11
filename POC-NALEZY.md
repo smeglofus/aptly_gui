@@ -7,9 +7,23 @@ Demo prostředí je v `demo/`.
 
 ### Async tasky v API
 Funguje. `_async=1` vrací `{"Name":…,"ID":n,"State":0}`, stav se čte z `GET /api/tasks/{id}`,
-výstup z `GET /api/tasks/{id}/output`. `GET /api/tasks/{id}/detail` vrací `{}` — nepoužitelné.
+výstup z `GET /api/tasks/{id}/output`.
 
 Stavy tasku: `0` = zařazen, `1` = běží, `2` = úspěch, `3` = chyba.
+
+### Průběh stahování
+
+**Oprava dřívějšího závěru.** `GET /api/tasks/{id}/detail` není nepoužitelný — prázdný objekt
+vrací jen u tasků, které nic nestahují (třeba `db cleanup`). U aktualizace mirroru vrací:
+
+```json
+{"TotalDownloadSize":1437811898,"RemainingDownloadSize":1069152444,
+ "TotalNumberOfPackages":303,"RemainingNumberOfPackages":150}
+```
+
+Z toho jde spočítat procenta, stažené bajty, hotové balíčky, rychlost i odhad zbývajícího
+času. První vzorky po spuštění jsou ještě prázdné, protože aptly nejdřív plánuje stahování;
+UI to musí snést.
 
 ### Obsazenost disku
 `GET /api/storage` vrací `{"Total":59360,"Free":23383,"PercentFull":60.6}` (v MB).

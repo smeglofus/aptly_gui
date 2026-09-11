@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aptly-gui VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-11 10:22+0100\n"
+"POT-Creation-Date: 2026-09-11 10:48+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -18,12 +18,27 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+#: src/aptly_gui/web/templates/_job_progress.html:60
+#, python-format
+msgid "%(done)s of %(total)s packages"
+msgstr "%(done)s z %(total)s balíčků"
+
+#: src/aptly_gui/web/templates/_job_progress.html:16
+#, python-format
+msgid "%(done)s of %(total)s steps"
+msgstr "%(done)s z %(total)s kroků"
+
+#: src/aptly_gui/web/templates/_job_progress.html:66
+#, python-format
+msgid "%(eta)s left"
+msgstr "zbývá %(eta)s"
+
 #: src/aptly_gui/web/templates/_status.html:12
 #, python-format
 msgid "%(free)s free of %(total)s"
 msgstr "volno %(free)s z %(total)s"
 
-#: src/aptly_gui/web/app.py:343
+#: src/aptly_gui/web/app.py:347
 #, python-format
 msgid "%(n)d day ago"
 msgid_plural "%(n)d days ago"
@@ -31,7 +46,7 @@ msgstr[0] "před %(n)d dnem"
 msgstr[1] "před %(n)d dny"
 msgstr[2] "před %(n)d dny"
 
-#: src/aptly_gui/web/app.py:341
+#: src/aptly_gui/web/app.py:345
 #, python-format
 msgid "%(n)d hour ago"
 msgid_plural "%(n)d hours ago"
@@ -39,7 +54,7 @@ msgstr[0] "před %(n)d hodinou"
 msgstr[1] "před %(n)d hodinami"
 msgstr[2] "před %(n)d hodinami"
 
-#: src/aptly_gui/web/app.py:338
+#: src/aptly_gui/web/app.py:342
 #, python-format
 msgid "%(n)d min ago"
 msgid_plural "%(n)d min ago"
@@ -88,10 +103,6 @@ msgstr "Aptly API"
 msgid "Aptly is unreachable"
 msgstr "Aptly je nedostupné"
 
-#: src/aptly_gui/web/templates/_job_progress.html:26
-msgid "Aptly task"
-msgstr "Aptly task"
-
 #: src/aptly_gui/web/templates/settings.html:31
 msgid "Aptly version"
 msgstr "Verze aptly"
@@ -102,7 +113,7 @@ msgstr "Verze aptly"
 msgid "Architectures"
 msgstr "Architektury"
 
-#: src/aptly_gui/web/templates/jobs.html:18
+#: src/aptly_gui/web/templates/jobs.html:19
 msgid "Author"
 msgstr "Autor"
 
@@ -156,7 +167,7 @@ msgstr "Distribuce"
 msgid "Drift"
 msgstr "Drift"
 
-#: src/aptly_gui/web/templates/_job_progress.html:12
+#: src/aptly_gui/web/templates/_job_progress.html:27
 msgid "Error"
 msgstr "Chyba"
 
@@ -169,10 +180,6 @@ msgstr "Všechny mirrory v aptly. Ty, které patří do sady, jde aktualizovat a
 #: src/aptly_gui/web/templates/set_detail.html:10
 msgid "Filter"
 msgstr "Filtr"
-
-#: src/aptly_gui/web/templates/_job_progress.html:8
-msgid "Finished"
-msgstr "Dokončeno"
 
 #: src/aptly_gui/web/templates/settings.html:44
 msgid "Free"
@@ -251,7 +258,7 @@ msgstr "Mirrory v této sadě"
 msgid "Name"
 msgstr "Název"
 
-#: src/aptly_gui/web/templates/jobs.html:36
+#: src/aptly_gui/web/templates/jobs.html:48
 #: src/aptly_gui/web/templates/set_detail.html:116
 msgid "No jobs yet."
 msgstr "Zatím žádné joby."
@@ -302,6 +309,10 @@ msgstr "Nic není publikované. Klienti nemají z čeho instalovat."
 msgid "One write job runs at a time. aptly keeps a single database, so running two sets at once would mean two writers into it."
 msgstr "Zápisové joby běží po jednom. Aptly má jedinou databázi, takže dvě sady současně by znamenaly dva zapisovatele do ní."
 
+#: src/aptly_gui/web/templates/_job_progress.html:76
+msgid "Output"
+msgstr "Výstup"
+
 #: src/aptly_gui/web/templates/base.html:14
 #: src/aptly_gui/web/templates/dashboard.html:2
 #: src/aptly_gui/web/templates/dashboard.html:5
@@ -315,6 +326,10 @@ msgstr "Prefix"
 #: src/aptly_gui/web/templates/dashboard.html:68
 msgid "Prefix / distribution"
 msgstr "Prefix / distribuce"
+
+#: src/aptly_gui/web/templates/jobs.html:17
+msgid "Progress"
+msgstr "Průběh"
 
 #: src/aptly_gui/web/templates/base.html:18
 #: src/aptly_gui/web/templates/publications.html:2
@@ -410,14 +425,11 @@ msgstr "Snapshoty"
 msgid "Some suite and component combinations have no mirror. You can still adopt, but an update will stop on the missing ones."
 msgstr "Některé kombinace suite a komponenty nemají mirror. Převzít to jde i tak, ale aktualizace se na chybějících zastaví."
 
-#: src/aptly_gui/web/templates/_job_progress.html:7
-#: src/aptly_gui/web/templates/jobs.html:17
+#: src/aptly_gui/web/templates/jobs.html:18
 #: src/aptly_gui/web/templates/set_detail.html:100
 msgid "Started"
 msgstr "Spuštěno"
 
-#: src/aptly_gui/web/templates/_job_progress.html:6
-#: src/aptly_gui/web/templates/_job_progress.html:25
 #: src/aptly_gui/web/templates/jobs.html:16
 #: src/aptly_gui/web/templates/publications.html:23
 #: src/aptly_gui/web/templates/set_detail.html:54
@@ -425,10 +437,6 @@ msgstr "Spuštěno"
 #: src/aptly_gui/web/templates/snapshots.html:16
 msgid "State"
 msgstr "Stav"
-
-#: src/aptly_gui/web/templates/_job_progress.html:24
-msgid "Step"
-msgstr "Krok"
 
 #: src/aptly_gui/web/templates/set_detail.html:23
 msgid "Suite"
@@ -474,7 +482,7 @@ msgstr "Tohle stáhne aktualizace a zmrazí je jako sadu snapshotů. Ke klientů
 msgid "This is what clients actually see in their sources.list. Each suite is its own publication, and the components inside it point at their own snapshots."
 msgstr "Tohle klienti skutečně vidí ve svém sources.list. Každá suite je samostatná publikace a komponenty v ní ukazují na vlastní snapshoty."
 
-#: src/aptly_gui/web/templates/_job_progress.html:16
+#: src/aptly_gui/web/templates/_job_progress.html:31
 msgid "This job was interrupted by a restart. aptly forgets its task ids when it restarts, so what actually completed is read back from aptly rather than replayed."
 msgstr "Tento job přerušil restart. Aptly při restartu zapomene ID svých tasků, takže se skutečný stav načítá zpátky z aptly místo přehrávání."
 
@@ -502,6 +510,14 @@ msgstr "Upstream"
 msgid "Used"
 msgstr "Využito"
 
+#: src/aptly_gui/web/templates/_job_progress.html:71
+msgid "Waiting for aptly to report progress…"
+msgstr "Čeká se, až aptly nahlásí průběh…"
+
+#: src/aptly_gui/web/templates/_job_progress.html:86
+msgid "Waiting to start…"
+msgstr "Čeká na spuštění…"
+
 #: src/aptly_gui/web/templates/dashboard.html:62
 msgid "What is published"
 msgstr "Co je publikované"
@@ -518,7 +534,7 @@ msgstr "Aptly si keyringy mezi aktualizacemi nepamatuje, proto se ukládají sem
 msgid "aptly-gui"
 msgstr "aptly-gui"
 
-#: src/aptly_gui/web/app.py:356
+#: src/aptly_gui/web/app.py:382
 msgid "cleanup"
 msgstr "úklid"
 
@@ -526,7 +542,7 @@ msgstr "úklid"
 msgid "complete"
 msgstr "kompletní"
 
-#: src/aptly_gui/web/app.py:365
+#: src/aptly_gui/web/app.py:391
 msgid "failed"
 msgstr "chyba"
 
@@ -534,11 +550,11 @@ msgstr "chyba"
 msgid "incomplete"
 msgstr "nekompletní"
 
-#: src/aptly_gui/web/app.py:366
+#: src/aptly_gui/web/app.py:392
 msgid "interrupted"
 msgstr "přerušeno"
 
-#: src/aptly_gui/web/app.py:335
+#: src/aptly_gui/web/app.py:339
 msgid "just now"
 msgstr "před chvílí"
 
@@ -566,7 +582,7 @@ msgstr "chybí"
 msgid "missing <code>%(name)s</code>"
 msgstr "chybí <code>%(name)s</code>"
 
-#: src/aptly_gui/web/app.py:332 src/aptly_gui/web/templates/dashboard.html:123
+#: src/aptly_gui/web/app.py:336 src/aptly_gui/web/templates/dashboard.html:123
 #: src/aptly_gui/web/templates/mirrors.html:39
 msgid "never"
 msgstr "nikdy"
@@ -575,7 +591,7 @@ msgstr "nikdy"
 msgid "ok"
 msgstr "ok"
 
-#: src/aptly_gui/web/app.py:367
+#: src/aptly_gui/web/app.py:393
 msgid "pending"
 msgstr "čeká"
 
@@ -590,7 +606,7 @@ msgstr[0] "publikace"
 msgstr[1] "publikace"
 msgstr[2] "publikací"
 
-#: src/aptly_gui/web/app.py:355
+#: src/aptly_gui/web/app.py:381
 msgid "publish"
 msgstr "publikace"
 
@@ -598,15 +614,15 @@ msgstr "publikace"
 msgid "published"
 msgstr "publikovaný"
 
-#: src/aptly_gui/web/app.py:362
+#: src/aptly_gui/web/app.py:388
 msgid "queued"
 msgstr "ve frontě"
 
-#: src/aptly_gui/web/app.py:363
+#: src/aptly_gui/web/app.py:389
 msgid "running"
 msgstr "běží"
 
-#: src/aptly_gui/web/app.py:368
+#: src/aptly_gui/web/app.py:394
 msgid "skipped"
 msgstr "přeskočeno"
 
@@ -621,11 +637,11 @@ msgstr[2] "snapshotů"
 msgid "snapshot missing"
 msgstr "snapshot chybí"
 
-#: src/aptly_gui/web/app.py:364
+#: src/aptly_gui/web/app.py:390
 msgid "succeeded"
 msgstr "úspěch"
 
-#: src/aptly_gui/web/app.py:354
+#: src/aptly_gui/web/app.py:380
 msgid "sync and snapshot"
 msgstr "sync a snapshot"
 

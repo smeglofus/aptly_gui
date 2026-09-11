@@ -4,7 +4,16 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.engine import Dialect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
@@ -155,11 +164,36 @@ class Job(Base):
     error: Mapped[str | None] = mapped_column(Text, default=None)
     # Free-form job input, e.g. which snapshot set a rollback targets.
     params: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Known before the steps exist, so the overall bar does not jump as they appear.
+    expected_steps: Mapped[int | None] = mapped_column(Integer, default=None)
 
     steps: Mapped[list[JobStep]] = relationship(
         back_populates="job", cascade="all, delete-orphan", order_by="JobStep.position"
     )
     mirror_set: Mapped[MirrorSet | None] = relationship()
+
+    @property
+    def elapsed_seconds(self) -> float:
+        if self.started_at is None:
+            return 0.0
+        end = self.finished_at or datetime.now(UTC)
+        return max(0.0, (end - self.started_at).total_seconds())
+
+    @property
+    def total_steps(self) -> int:
+        """Planned count, falling back to what exists for jobs from before this was stored."""
+        return max(self.expected_steps or 0, len(self.steps))
+
+    @property
+    def done_steps(self) -> int:
+        return sum(1 for step in self.steps if step.state == StepState.SUCCEEDED)
+
+    @property
+    def percent(self) -> float:
+        total = self.total_steps
+        if not total:
+            return 0.0
+        return min(100.0, 100.0 * self.done_steps / total)
 
 
 class JobStep(Base):
@@ -176,7 +210,57 @@ class JobStep(Base):
     started_at: Mapped[datetime | None] = mapped_column(UtcDateTime, default=None)
     finished_at: Mapped[datetime | None] = mapped_column(UtcDateTime, default=None)
 
+    # Download progress as last reported by aptly; absent for steps that download nothing.
+    total_bytes: Mapped[int | None] = mapped_column(BigInteger, default=None)
+    remaining_bytes: Mapped[int | None] = mapped_column(BigInteger, default=None)
+    total_packages: Mapped[int | None] = mapped_column(Integer, default=None)
+    remaining_packages: Mapped[int | None] = mapped_column(Integer, default=None)
+
     job: Mapped[Job] = relationship(back_populates="steps")
+
+    @property
+    def has_progress(self) -> bool:
+        return self.total_bytes is not None and self.remaining_bytes is not None
+
+    @property
+    def downloaded_bytes(self) -> int:
+        if self.total_bytes is None or self.remaining_bytes is None:
+            return 0
+        return max(0, self.total_bytes - self.remaining_bytes)
+
+    @property
+    def done_packages(self) -> int:
+        if self.total_packages is None or self.remaining_packages is None:
+            return 0
+        return max(0, self.total_packages - self.remaining_packages)
+
+    @property
+    def percent(self) -> float:
+        if not self.total_bytes:
+            return 100.0 if self.state == StepState.SUCCEEDED else 0.0
+        return min(100.0, 100.0 * self.downloaded_bytes / self.total_bytes)
+
+    @property
+    def elapsed_seconds(self) -> float:
+        if self.started_at is None:
+            return 0.0
+        end = self.finished_at or datetime.now(UTC)
+        return max(0.0, (end - self.started_at).total_seconds())
+
+    @property
+    def bytes_per_second(self) -> float | None:
+        """Average since the step started, which stays readable instead of flickering."""
+        elapsed = self.elapsed_seconds
+        if not self.has_progress or elapsed < 2 or self.downloaded_bytes <= 0:
+            return None
+        return self.downloaded_bytes / elapsed
+
+    @property
+    def eta_seconds(self) -> float | None:
+        speed = self.bytes_per_second
+        if speed is None or not speed or self.remaining_bytes is None:
+            return None
+        return self.remaining_bytes / speed
 
 
 class AuditEntry(Base):

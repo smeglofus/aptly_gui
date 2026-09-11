@@ -14,6 +14,7 @@
         <th>{% trans %}Type{% endtrans %}</th>
         <th>{% trans %}Mirror set{% endtrans %}</th>
         <th>{% trans %}State{% endtrans %}</th>
+        <th>{% trans %}Progress{% endtrans %}</th>
         <th>{% trans %}Started{% endtrans %}</th>
         <th>{% trans %}Author{% endtrans %}</th>
       </tr>
@@ -25,6 +26,15 @@
         <td>{{ job.type | job_type }}</td>
         <td>{{ job.mirror_set.name if job.mirror_set else '—' }}</td>
         <td>{{ job.state | job_state }}</td>
+        <td>
+          {% if job.total_steps %}
+            <span class="bar" style="width: 90px">
+              <span class="{{ 'bad' if job.state == 'failed' }}"
+                    style="width: {{ '%.0f' | format(job.percent) }}%"></span>
+            </span>
+            {{ job.done_steps }}/{{ job.total_steps }}
+          {% else %}—{% endif %}
+        </td>
         <td>{{ job.started_at | age }}</td>
         <td>{{ job.author }}</td>
       </tr>

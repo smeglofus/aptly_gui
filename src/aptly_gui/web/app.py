@@ -46,6 +46,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     templates.env.filters["gib"] = _gib
     templates.env.filters["job_type"] = _job_type
     templates.env.filters["job_state"] = _job_state
+    templates.env.filters["bytes"] = _bytes
+    templates.env.filters["duration"] = _duration
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -223,7 +225,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 (
                     await session.execute(
                         select(Job)
-                        .options(selectinload(Job.mirror_set))
+                        .options(selectinload(Job.mirror_set), selectinload(Job.steps))
                         .order_by(Job.id.desc())
                         .limit(50)
                     )
@@ -349,6 +351,28 @@ def _gib(megabytes: int | None) -> str:
     if megabytes is None:
         return "—"
     return f"{megabytes / 1024:.1f} GiB"
+
+
+def _bytes(value: float | None) -> str:
+    if not value:
+        return "0 B"
+    size = float(value)
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if size < 1024 or unit == "TiB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TiB"
+
+
+def _duration(seconds: float | None) -> str:
+    if not seconds or seconds < 0:
+        return "0 s"
+    total = int(seconds)
+    if total < 60:
+        return f"{total} s"
+    if total < 3600:
+        return f"{total // 60} min {total % 60} s"
+    return f"{total // 3600} h {(total % 3600) // 60} min"
 
 
 def _job_type(value: str) -> str:

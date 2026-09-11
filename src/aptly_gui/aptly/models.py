@@ -32,6 +32,45 @@ class Task:
 
 
 @dataclass(frozen=True)
+class TaskProgress:
+    """Download progress aptly reports for a running mirror update.
+
+    Only tasks that download anything report this; everything else returns an empty
+    object, which parses to None rather than a row of zeroes.
+    """
+
+    total_bytes: int
+    remaining_bytes: int
+    total_packages: int
+    remaining_packages: int
+
+    @classmethod
+    def parse(cls, raw: dict[str, Any]) -> TaskProgress | None:
+        if not raw or "TotalDownloadSize" not in raw:
+            return None
+        return cls(
+            total_bytes=raw["TotalDownloadSize"],
+            remaining_bytes=raw["RemainingDownloadSize"],
+            total_packages=raw["TotalNumberOfPackages"],
+            remaining_packages=raw["RemainingNumberOfPackages"],
+        )
+
+    @property
+    def downloaded_bytes(self) -> int:
+        return max(0, self.total_bytes - self.remaining_bytes)
+
+    @property
+    def done_packages(self) -> int:
+        return max(0, self.total_packages - self.remaining_packages)
+
+    @property
+    def percent(self) -> float:
+        if self.total_bytes <= 0:
+            return 100.0 if self.remaining_packages == 0 else 0.0
+        return min(100.0, 100.0 * self.downloaded_bytes / self.total_bytes)
+
+
+@dataclass(frozen=True)
 class Storage:
     total_mb: int
     free_mb: int

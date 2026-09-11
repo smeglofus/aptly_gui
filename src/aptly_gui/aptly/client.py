@@ -14,6 +14,7 @@ from .models import (
     Snapshot,
     Storage,
     Task,
+    TaskProgress,
     TaskState,
 )
 
@@ -109,6 +110,11 @@ class AptlyClient:
 
     async def task_output(self, task_id: int) -> str:
         return str(await self._request("GET", f"/api/tasks/{task_id}/output"))
+
+    async def task_progress(self, task_id: int) -> TaskProgress | None:
+        """Download progress, or None for a task that downloads nothing."""
+        payload = await self._request("GET", f"/api/tasks/{task_id}/detail")
+        return TaskProgress.parse(payload or {})
 
     async def wait_for_task(
         self,

@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from ..aptly import AptlyClient, AptlyError, MirrorSpec, Signing
+from ..aptly import AptlyClient, AptlyError, MirrorSpec, Signing, TaskFailed, TaskState
 from ..db import (
     AuditEntry,
     Job,
@@ -45,6 +45,16 @@ def order_suites(suites: list[str]) -> list[str]:
         return (0, suite)
 
     return sorted(suites, key=rank)
+
+
+def _expected_steps(job_type: JobType, mirror_set: MirrorSet) -> int:
+    """How many steps the job will create, so the overall bar is honest from the start."""
+    mirrors = len(mirror_set.suites) * len(mirror_set.components)
+    if job_type is JobType.UPDATE:
+        return 1 + mirrors * 2  # preflight, then a sync and a snapshot per mirror
+    if job_type is JobType.SWITCH:
+        return len(mirror_set.suites) + 1  # one publish per suite, then verify
+    return 1
 
 
 def spec_for(mirror_set: MirrorSet, suite: str, component: str) -> MirrorSpec:
@@ -157,6 +167,7 @@ class JobRunner:
 
             job.state = JobState.RUNNING
             job.started_at = datetime.now(UTC)
+            job.expected_steps = _expected_steps(JobType(job.type), mirror_set)
             await session.commit()
 
             try:
@@ -212,9 +223,33 @@ class JobRunner:
             step.output_tail = output[-OUTPUT_TAIL:]
         await session.commit()
 
-    async def _await_task(self, task_id: int) -> str:
-        task = await self._client.wait_for_task(task_id, poll_interval=self._poll)
-        return await self._client.task_output(task.id)
+    async def _await_task(self, session: AsyncSession, step: JobStep, task_id: int) -> str:
+        """Wait for an aptly task, recording download progress onto the step as it goes.
+
+        aptly only reports progress once it has planned the download, so the first
+        polls come back empty and the step simply has no numbers yet.
+        """
+        while True:
+            task = await self._client.get_task(task_id)
+            if task.state.finished:
+                break
+            progress = await self._client.task_progress(task_id)
+            if progress is not None:
+                step.total_bytes = progress.total_bytes
+                step.remaining_bytes = progress.remaining_bytes
+                step.total_packages = progress.total_packages
+                step.remaining_packages = progress.remaining_packages
+                await session.commit()
+            await asyncio.sleep(self._poll)
+
+        output = await self._client.task_output(task_id)
+        if task.state is TaskState.FAILED:
+            raise TaskFailed(task, output)
+        if step.total_bytes is not None:
+            step.remaining_bytes = 0
+            step.remaining_packages = 0
+            await session.commit()
+        return output
 
     # --- update: sync then snapshot, deliberately stopping before publish ---
 
@@ -244,7 +279,7 @@ class JobRunner:
                 task = await self._client.update_mirror(spec)
                 step.aptly_task_id = task.id
                 await session.commit()
-                output = await self._await_task(task.id)
+                output = await self._await_task(session, step, task.id)
                 await self._finish_step(session, step, StepState.SUCCEEDED, output)
 
         taken: dict[str, str] = {}
@@ -299,7 +334,7 @@ class JobRunner:
                 )
             step.aptly_task_id = task.id
             await session.commit()
-            output = await self._await_task(task.id)
+            output = await self._await_task(session, step, task.id)
             await self._finish_step(session, step, StepState.SUCCEEDED, output)
 
         step = await self._add_step(session, job, "Verify")

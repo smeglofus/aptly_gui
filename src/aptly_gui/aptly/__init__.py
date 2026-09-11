@@ -8,6 +8,7 @@ from .models import (
     Snapshot,
     Storage,
     Task,
+    TaskProgress,
     TaskState,
 )
 
@@ -23,6 +24,7 @@ __all__ = [
     "Storage",
     "Task",
     "TaskFailed",
+    "TaskProgress",
     "TaskState",
     "encode_prefix",
 ]
