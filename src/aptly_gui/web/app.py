@@ -451,6 +451,100 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await session.refresh(mirror_set)
         return RedirectResponse(f"/sets/{mirror_set.id}", status_code=303)
 
+    @app.get("/sets/{set_id}/delete", response_class=HTMLResponse)
+    async def set_delete_confirm(request: Request, set_id: int) -> HTMLResponse:
+        async with request.app.state.sessions() as session:
+            mirror_set = await session.get(
+                MirrorSet, set_id, options=[selectinload(MirrorSet.snapshot_sets)]
+            )
+            if mirror_set is None:
+                return await render(request, "not_found.html", page="sets")
+            snapshot_sets = len(mirror_set.snapshot_sets)
+            name = mirror_set.name
+            expected = mirror_set.expected_mirrors
+
+        cached = await request.app.state.cache.get()
+        present = [item for item in expected if item in cached.state.mirror_names]
+        # aptly refuses to drop a mirror that still has snapshots, so say so first
+        # rather than letting the job fail halfway through.
+        blocking = _snapshots_of(cached.state, present)
+        return await render(
+            request,
+            "set_delete.html",
+            page="sets",
+            set_id=set_id,
+            name=name,
+            present=present,
+            snapshot_sets=snapshot_sets,
+            blocking=blocking,
+        )
+
+    @app.post("/sets/{set_id}/delete")
+    async def set_delete(request: Request, set_id: int, mirrors: str = Form("keep")) -> Response:
+        async with request.app.state.sessions() as session:
+            mirror_set = await session.get(MirrorSet, set_id)
+            if mirror_set is None:
+                return RedirectResponse("/sets", status_code=303)
+            name = mirror_set.name
+            expected = mirror_set.expected_mirrors
+
+            if mirrors != "delete":
+                # Forgetting is the inverse of adoption: the grouping goes, and
+                # everything it described stays exactly where it was.
+                session.add(
+                    AuditEntry(actor=request.state.user.username, action="set.forget", target=name)
+                )
+                await session.delete(mirror_set)
+                await session.commit()
+                return RedirectResponse("/sets", status_code=303)
+
+        cached = await request.app.state.cache.get()
+        present = [item for item in expected if item in cached.state.mirror_names]
+        if _snapshots_of(cached.state, present):
+            return RedirectResponse(f"/sets/{set_id}/delete", status_code=303)
+
+        job = await request.app.state.runner.enqueue(
+            JobType.REMOVE,
+            set_id,
+            author=request.state.user.username,
+            params={"mirrors": present, "mirror_set_id": set_id},
+        )
+        return RedirectResponse(f"/jobs/{job.id}", status_code=303)
+
+    @app.get("/mirrors/delete", response_class=HTMLResponse)
+    async def mirror_delete_confirm(request: Request, name: str) -> HTMLResponse:
+        cached = await request.app.state.cache.get()
+        sets = await _load_sets(request)
+        owner = _managed_map(sets).get(name)
+        exists = name in cached.state.mirror_names
+        return await render(
+            request,
+            "mirror_delete.html",
+            page="mirrors",
+            name=name,
+            exists=exists,
+            owner=owner,
+            blocking=_snapshots_of(cached.state, [name]),
+        )
+
+    @app.post("/mirrors/delete")
+    async def mirror_delete(request: Request, name: str = Form(...)) -> Response:
+        cached = await request.app.state.cache.get()
+        sets = await _load_sets(request)
+        if (
+            name not in cached.state.mirror_names
+            or _managed_map(sets).get(name)
+            or _snapshots_of(cached.state, [name])
+        ):
+            return RedirectResponse(f"/mirrors/delete?name={name}", status_code=303)
+        job = await request.app.state.runner.enqueue(
+            JobType.REMOVE,
+            None,
+            author=request.state.user.username,
+            params={"mirrors": [name]},
+        )
+        return RedirectResponse(f"/jobs/{job.id}", status_code=303)
+
     @app.get("/sets/{set_id}", response_class=HTMLResponse)
     async def set_detail(request: Request, set_id: int) -> HTMLResponse:
         async with request.app.state.sessions() as session:
@@ -885,6 +979,21 @@ async def _snapshot_context(request: Request, state: Any) -> dict[str, dict[str,
     return context
 
 
+def _snapshots_of(state: Any, mirrors: list[str]) -> list[str]:
+    """Snapshots that appear to have come from these mirrors.
+
+    Matched by name prefix, which is how the snapshots this tool makes are named;
+    aptly does not report which mirror a snapshot came from.
+    """
+    found = [
+        snapshot.name
+        for snapshot in state.snapshots
+        for mirror in mirrors
+        if snapshot.name.startswith(f"{mirror}-")
+    ]
+    return sorted(set(found))
+
+
 def _managed_map(sets: list[MirrorSet]) -> dict[str, str]:
     return {name: item.name for item in sets for name in item.expected_mirrors}
 
@@ -1091,6 +1200,7 @@ def _job_type(value: str) -> str:
         "update": i18n.gettext("sync and snapshot"),
         "switch": i18n.gettext("publish"),
         "discard": i18n.gettext("discard snapshots"),
+        "remove": i18n.gettext("delete mirrors"),
         "cleanup": i18n.gettext("cleanup"),
     }.get(value, value)
 

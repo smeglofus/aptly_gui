@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{% trans name=name %}Delete {{ name }}{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans name=name %}Delete {{ name }}{% endtrans %}</h1>
+
+<div class="panel">
+  <h2 style="margin-top:0">{% trans %}Forget the set{% endtrans %}</h2>
+  <p>{% trans %}Removes only this tool's record that these mirrors belong together. Nothing in aptly is touched — the mirrors, snapshots and publications all stay exactly as they are, and show up as unmanaged afterwards.{% endtrans %}</p>
+  <p>{% trans %}This is the inverse of adopting, and it is always safe.{% endtrans %}</p>
+  <form method="post" action="/sets/{{ set_id }}/delete">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="mirrors" value="keep">
+    <button type="submit">{% trans %}Forget it{% endtrans %}</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2 style="margin-top:0">{% trans %}Delete the set and its mirrors{% endtrans %}</h2>
+  {% if present %}
+    <p>{% trans count=present | length %}This also deletes {{ count }} mirror from aptly and then reclaims the disk space.{% pluralize %}This also deletes {{ count }} mirrors from aptly and then reclaims the disk space.{% endtrans %}</p>
+  {% else %}
+    <p>{% trans %}None of this set's mirrors exist in aptly, so only the record goes.{% endtrans %}</p>
+  {% endif %}
+
+  {% if blocking %}
+    <div class="alert">
+      <strong>{% trans %}Snapshots were made from these mirrors{% endtrans %}</strong>
+      <p>{% trans %}aptly will not drop a mirror that still has snapshots, and neither will this. Discard the snapshot sets first, then come back.{% endtrans %}</p>
+      <ul>{% for item in blocking %}<li><code>{{ item }}</code></li>{% endfor %}</ul>
+      <p><a class="button" href="/sets/{{ set_id }}">{% trans %}Back to the set{% endtrans %}</a></p>
+    </div>
+  {% else %}
+    {% if snapshot_sets %}
+    <div class="notice">
+      {% trans count=snapshot_sets %}{{ count }} snapshot set recorded for this set will be forgotten too.{% pluralize %}{{ count }} snapshot sets recorded for this set will be forgotten too.{% endtrans %}
+    </div>
+    {% endif %}
+    <details>
+      <summary>{% trans %}Which mirrors{% endtrans %}</summary>
+      <ul>{% for item in present %}<li><code>{{ item }}</code></li>{% endfor %}</ul>
+    </details>
+    <form method="post" action="/sets/{{ set_id }}/delete">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="mirrors" value="delete">
+      <p><button type="submit" class="danger">{% trans %}Delete the set and its mirrors{% endtrans %}</button></p>
+    </form>
+  {% endif %}
+</div>
+
+<p><a class="button" href="/sets/{{ set_id }}">{% trans %}Cancel{% endtrans %}</a></p>
+{% endblock %}

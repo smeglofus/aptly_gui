@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}Delete mirror{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Delete mirror{% endtrans %}</h1>
+
+{% if not exists %}
+  <p class="empty">{% trans %}That mirror no longer exists.{% endtrans %}</p>
+  <p><a class="button" href="/mirrors">{% trans %}Back to mirrors{% endtrans %}</a></p>
+{% elif owner %}
+  <div class="notice">
+    {% trans name=owner %}This mirror belongs to the set {{ name }}. Deleting it on its own would leave that set describing something that is not there, so delete it from the set instead.{% endtrans %}
+  </div>
+  <p>
+    <a class="button" href="/sets">{% trans %}Go to mirror sets{% endtrans %}</a>
+    <a class="button" href="/mirrors">{% trans %}Back to mirrors{% endtrans %}</a>
+  </p>
+{% elif blocking %}
+  <div class="alert">
+    <strong>{% trans %}Snapshots were made from this mirror{% endtrans %}</strong>
+    <p>{% trans %}aptly will not drop a mirror that still has snapshots. Delete those first.{% endtrans %}</p>
+    <ul>{% for item in blocking %}<li><code>{{ item }}</code></li>{% endfor %}</ul>
+  </div>
+  <p>
+    <a class="button" href="/snapshots">{% trans %}Go to snapshots{% endtrans %}</a>
+    <a class="button" href="/mirrors">{% trans %}Back to mirrors{% endtrans %}</a>
+  </p>
+{% else %}
+  <div class="panel">
+    <p>{% trans %}This deletes the mirror in aptly and then runs a database cleanup so the disk space actually comes back.{% endtrans %}</p>
+    <dl class="meta">
+      <dt>{% trans %}Mirror{% endtrans %}</dt><dd><code>{{ name }}</code></dd>
+    </dl>
+    <form method="post" action="/mirrors/delete">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="name" value="{{ name }}">
+      <button type="submit" class="danger">{% trans %}Delete it{% endtrans %}</button>
+      <a class="button" href="/mirrors">{% trans %}Cancel{% endtrans %}</a>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}

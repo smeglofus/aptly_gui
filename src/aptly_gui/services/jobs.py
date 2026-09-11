@@ -186,21 +186,24 @@ class JobRunner:
                 if job.mirror_set_id is not None
                 else None
             )
-            if mirror_set is None and job.type != JobType.DISCARD:
+            if mirror_set is None and job.type not in (JobType.DISCARD, JobType.REMOVE):
                 return
 
             job.state = JobState.RUNNING
             job.started_at = datetime.now(UTC)
-            job.expected_steps = (
-                discard_steps(len(job.params.get("snapshots", [])))
-                if job.type == JobType.DISCARD
-                else _expected_steps(JobType(job.type), mirror_set)
-            )
+            if job.type == JobType.DISCARD:
+                job.expected_steps = discard_steps(len(job.params.get("snapshots", [])))
+            elif job.type == JobType.REMOVE:
+                job.expected_steps = discard_steps(len(job.params.get("mirrors", [])))
+            else:
+                job.expected_steps = _expected_steps(JobType(job.type), mirror_set)
             await session.commit()
 
             try:
                 if job.type == JobType.DISCARD:
                     await self._discard(session, job)
+                elif job.type == JobType.REMOVE:
+                    await self._remove(session, job)
                 elif mirror_set is None:
                     raise ValueError("job has no mirror set")
                 elif job.type == JobType.CREATE:
@@ -431,6 +434,43 @@ class JobRunner:
             snapshot_set = await session.get(SnapshotSet, int(set_id))
             if snapshot_set is not None:
                 await session.delete(snapshot_set)
+                await session.commit()
+
+    # --- remove: delete mirrors, and the set that described them ---
+
+    async def _remove(self, session: AsyncSession, job: Job) -> None:
+        """Drop the named mirrors and then compact.
+
+        aptly refuses to drop a mirror that still has snapshots, and that refusal is
+        worth keeping: it is the difference between removing a definition and quietly
+        orphaning the data made from it.
+        """
+        names = [str(name) for name in job.params.get("mirrors", [])]
+        for name in names:
+            step = await self._add_step(session, job, f"Delete mirror {name}")
+            try:
+                task = await self._client.delete_mirror(name)
+            except AptlyError as exc:
+                await self._finish_step(session, step, StepState.FAILED, str(exc))
+                raise
+            step.aptly_task_id = task.id
+            await session.commit()
+            output = await self._await_task(session, step, task.id)
+            await self._finish_step(session, step, StepState.SUCCEEDED, output)
+
+        step = await self._add_step(session, job, "Reclaim disk space")
+        task = await self._client.db_cleanup()
+        step.aptly_task_id = task.id
+        await session.commit()
+        output = await self._await_task(session, step, task.id)
+        await self._finish_step(session, step, StepState.SUCCEEDED, output)
+
+        set_id = job.params.get("mirror_set_id")
+        if set_id is not None:
+            mirror_set = await session.get(MirrorSet, int(set_id))
+            if mirror_set is not None:
+                job.mirror_set_id = None
+                await session.delete(mirror_set)
                 await session.commit()
 
     # --- switch: point publications at a chosen snapshot set ---

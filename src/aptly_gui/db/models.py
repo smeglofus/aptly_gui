@@ -66,6 +66,7 @@ class JobType(StrEnum):
     # Rollback is the same operation as a forward switch, just to an older set.
     SWITCH = "switch"
     DISCARD = "discard"
+    REMOVE = "remove"
     CLEANUP = "cleanup"
 
 

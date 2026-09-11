@@ -111,6 +111,12 @@
   <p class="empty">{% trans %}No snapshot sets yet. Run a sync to create one.{% endtrans %}</p>
 {% endif %}
 
+<h2>{% trans %}Remove this set{% endtrans %}</h2>
+<div class="panel">
+  <p>{% trans %}Forget the grouping and leave aptly alone, or delete the mirrors with it.{% endtrans %}</p>
+  <a class="button danger" href="/sets/{{ mirror_set.id }}/delete">{% trans %}Delete this set{% endtrans %}</a>
+</div>
+
 <h2>{% trans %}Recent jobs{% endtrans %}</h2>
 {% if jobs %}
 <div class="scroll">

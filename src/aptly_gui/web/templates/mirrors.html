@@ -18,6 +18,7 @@
         <th>{% trans %}Architectures{% endtrans %}</th>
         <th>{% trans %}Filter{% endtrans %}</th>
         <th>{% trans %}Last sync{% endtrans %}</th>
+        <th>{% trans %}Actions{% endtrans %}</th>
       </tr>
     </thead>
     <tbody>
@@ -37,6 +38,13 @@
         <td>{{ m.architectures | join(', ') or '—' }}</td>
         <td>{% if m.filter %}<code>{{ m.filter }}</code>{% else %}—{% endif %}</td>
         <td>{% if m.last_download %}{{ m.last_download | age }}{% else %}<span class="tag tag-bad">{% trans %}never{% endtrans %}</span>{% endif %}</td>
+        <td>
+          {% if m.name in managed_mirrors %}
+            <a class="button" href="/sets">{% trans %}Manage in set{% endtrans %}</a>
+          {% else %}
+            <a class="button danger" href="/mirrors/delete?name={{ m.name }}">{% trans %}Delete{% endtrans %}</a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
