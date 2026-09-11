@@ -1,16 +1,31 @@
 # demo
 
-Testovací aptly pro vývoj aptly-gui. Staví vlastní image z `debian:trixie-slim`
-(oficiální aptly image neexistuje), generuje jednorázový podpisový klíč bez hesla
-a pouští `aptly api serve -no-lock`.
+Testovací aptly plus GUI. Aptly se staví z `debian:trixie-slim` (oficiální image
+neexistuje), generuje jednorázový podpisový klíč bez hesla a pouští
+`aptly api serve -no-lock`.
 
 ```sh
 docker compose up -d --build
-curl -s http://127.0.0.1:8079/api/version
 ```
 
-Port je `127.0.0.1:8079` (8080 bývá obsazený), přebít jde přes `APTLY_API_PORT`.
-API je bez autentizace, proto pouze na loopbacku.
+- GUI: <http://127.0.0.1:8078>
+- aptly API: <http://127.0.0.1:8079>
+
+Oba porty jsou jen na loopbacku, protože aptly API nemá autentizaci a GUI ji zatím
+taky ne. Přebít jdou přes `APTLY_GUI_PORT` a `APTLY_API_PORT`.
+
+## Když GUI nevidí aptly
+
+Na hostech, kde běží vedle Dockeru i k3s, umí kube-router filtrovat provoz mezi
+kontejnery na docker bridge a GUI pak hlásí `ConnectTimeout`, i když DNS jméno
+`aptly` resolvuje. Pozná se to tak, že `iptables -L FORWARD` má politiku DROP a
+`KUBE-ROUTER-FORWARD` je v řetězci první.
+
+Pro vývoj je nejjednodušší pustit GUI mimo kontejner proti publikovanému portu:
+
+```sh
+cd .. && .venv/bin/uvicorn aptly_gui.web.app:app --port 8078
+```
 
 Založení malého filtrovaného mirroru:
 

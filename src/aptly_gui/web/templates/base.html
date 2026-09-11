@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}aptly-gui{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.4/htmx.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">aptly<span>-gui</span></a>
+    <nav>
+      <a href="/" class="{{ 'on' if page == 'dashboard' }}">Přehled</a>
+      <a href="/mirrors" class="{{ 'on' if page == 'mirrors' }}">Mirrory</a>
+      <a href="/snapshots" class="{{ 'on' if page == 'snapshots' }}">Snapshoty</a>
+      <a href="/publications" class="{{ 'on' if page == 'publications' }}">Publikace</a>
+    </nav>
+    <form action="{{ request.url.path }}" method="get" class="refresh">
+      <input type="hidden" name="refresh" value="1">
+      <button type="submit">Načíst znovu</button>
+    </form>
+  </header>
+
+  {% include "_status.html" %}
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    Read-only přehled (v0.1). Zápisové akce přijdou ve v0.2.
+  </footer>
+</body>
+</html>

@@ -5,6 +5,9 @@ description = "Web UI for aptly, focused on upstream mirror lifecycle"
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.27",
+    "fastapi>=0.115",
+    "jinja2>=3.1",
+    "uvicorn[standard]>=0.30",
 ]
 
 [project.optional-dependencies]
@@ -21,6 +24,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"aptly_gui.web" = ["templates/*.html", "static/*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

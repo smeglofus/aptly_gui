@@ -12,5 +12,18 @@ services:
       timeout: 5s
       retries: 5
 
+  gui:
+    build:
+      context: ..
+    image: aptly-gui/aptly-gui:dev
+    # Loopback only: there is no authentication yet.
+    ports:
+      - "127.0.0.1:${APTLY_GUI_PORT:-8078}:8080"
+    environment:
+      APTLY_API_URL: http://aptly:8080
+    depends_on:
+      aptly:
+        condition: service_healthy
+
 volumes:
   aptly-data:

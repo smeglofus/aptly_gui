@@ -6,9 +6,9 @@ operation, and roll back when an update goes wrong.
 
 It talks to aptly over its REST API only and never touches aptly's database.
 
-> **Status: early.** The aptly API client is written and covered by integration tests that
-> drive a real mirror through sync, snapshot, publish, switch and rollback against aptly
-> 1.6.1. There is no web UI yet — that is v0.1.
+> **Status: v0.1 in progress.** A read-only web UI shows what is published, which snapshots
+> back it, and how old the mirrors are. There is **no authentication yet**, so bind it to
+> loopback. Controlled updates and rollback are v0.2.
 
 ## Why
 
@@ -25,18 +25,29 @@ REST API has no authentication, so it cannot simply be handed to colleagues.
 | [`POC-NALEZY.md`](POC-NALEZY.md) | Proof-of-concept findings (Czech) — what aptly's API actually does |
 | [`demo/`](demo/) | Throwaway aptly instance for development |
 
-## Development environment
+## Try it
 
-No official aptly Docker image exists, so `demo/` builds one from `debian:trixie-slim`,
-generates a throwaway signing key and exposes the API on loopback:
+`demo/` brings up a throwaway aptly (built from `debian:trixie-slim`, since no official
+image exists) with its own signing key, plus the UI:
 
 ```sh
 cd demo
 docker compose up -d --build
-curl -s http://127.0.0.1:8079/api/version
 ```
 
-See [`demo/README.md`](demo/README.md) for creating a small filtered mirror to test against.
+- UI on <http://127.0.0.1:8078>
+- aptly API on <http://127.0.0.1:8079>
+
+See [`demo/README.md`](demo/README.md) for creating a small filtered mirror to look at,
+and for what to do if the UI cannot reach aptly.
+
+## Configuration
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `APTLY_API_URL` | `http://127.0.0.1:8079` | Where aptly's REST API lives |
+| `APTLY_API_SOCKET` | — | Unix socket path, preferred over TCP |
+| `APTLY_GUI_REFRESH_SECONDS` | `15` | How long a read of aptly is reused |
 
 ## Tests
 

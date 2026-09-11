@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Snapshoty — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>Snapshoty</h1>
+<p class="lead">Nepublikovaný snapshot nic neškodí, ale ani nic nedělá. Místo uvolní až
+   <code>db cleanup</code>, ne samotné smazání — to je ve v0.3.</p>
+
+{% if s.snapshots %}
+<div class="scroll">
+  <table>
+    <thead>
+      <tr><th>Název</th><th>Vytvořen</th><th>Popis</th><th>Stav</th></tr>
+    </thead>
+    <tbody>
+      {% for snap in s.snapshots | sort(attribute='name') %}
+      <tr>
+        <th scope="row">{{ snap.name }}</th>
+        <td>{{ snap.created_at | age }}</td>
+        <td class="wrap">{{ snap.description or '—' }}</td>
+        <td>
+          {% if snap.name in s.published_snapshot_names %}
+            <span class="tag tag-ok">publikovaný</span>
+          {% else %}
+            <span class="tag">nepublikovaný</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="empty">Žádné snapshoty.</p>
+{% endif %}
+{% endblock %}

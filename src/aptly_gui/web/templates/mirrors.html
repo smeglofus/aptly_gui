@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Mirrory — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>Mirrory</h1>
+<p class="lead">Všechny mirrory v aptly. Seskupení do mirror setů a tlačítko Aktualizovat
+   přijdou ve v0.2.</p>
+
+{% if s.mirrors %}
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Název</th><th>Upstream</th><th>Distribuce</th>
+        <th>Komponenty</th><th>Architektury</th><th>Filtr</th><th>Poslední sync</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in s.mirrors %}
+      <tr>
+        <th scope="row">{{ m.name }}</th>
+        <td class="wrap"><code>{{ m.archive_url }}</code></td>
+        <td>{{ m.distribution }}</td>
+        <td>{{ m.components | join(', ') or '—' }}</td>
+        <td>{{ m.architectures | join(', ') or '—' }}</td>
+        <td>{% if m.filter %}<code>{{ m.filter }}</code>{% else %}—{% endif %}</td>
+        <td>{{ m.last_download | age }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="empty">Žádné mirrory.</p>
+{% endif %}
+{% endblock %}

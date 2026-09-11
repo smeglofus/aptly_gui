@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Publikace — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>Publikace</h1>
+<p class="lead">Tohle klienti skutečně vidí ve svém <code>sources.list</code>.
+   Každá suite je samostatná publikace, komponenty v ní ukazují na vlastní snapshoty.</p>
+
+{% if s.published %}
+  {% for pub in s.published %}
+  <section class="pub">
+    <h2><code>{{ pub.prefix }}/{{ pub.distribution }}</code></h2>
+    <dl class="meta">
+      <dt>Prefix</dt><dd>{{ pub.prefix }}</dd>
+      <dt>Distribuce</dt><dd>{{ pub.distribution }}</dd>
+      <dt>Architektury</dt><dd>{{ pub.architectures | join(', ') or '—' }}</dd>
+    </dl>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Komponenta</th><th>Snapshot</th><th>Stav</th></tr></thead>
+        <tbody>
+          {% for src in pub.sources %}
+          <tr>
+            <th scope="row">{{ src.component }}</th>
+            <td><code>{{ src.name }}</code></td>
+            <td>
+              {% if src.name in s.snapshot_names %}
+                <span class="tag tag-ok">ok</span>
+              {% else %}
+                <span class="tag tag-bad">snapshot chybí</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endfor %}
+{% else %}
+  <p class="empty">Žádná publikace.</p>
+{% endif %}
+{% endblock %}

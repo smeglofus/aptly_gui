@@ -1,0 +1,21 @@
+<div id="status" hx-get="/partials/status" hx-trigger="every 15s" hx-swap="outerHTML"
+     class="status {{ 'status-stale' if cached.stale else 'status-ok' }}">
+  {% if cached.stale %}
+    <strong>⚠ Aptly je nedostupné</strong>
+    <span>Zobrazená data jsou z {{ s.fetched_at | age }}, ne aktuální stav.</span>
+    <code>{{ cached.error }}</code>
+  {% else %}
+    <strong>✓ Aptly {{ s.version }}</strong>
+    <span>Načteno {{ s.fetched_at | age }}</span>
+    {% if s.storage %}
+      <span class="space">
+        Volno {{ s.storage.free_mb | gib }} z {{ s.storage.total_mb | gib }}
+        <span class="bar" role="img"
+              aria-label="Zaplněno {{ '%.0f' | format(s.storage.percent_full) }} %">
+          <span style="width: {{ '%.1f' | format(s.storage.percent_full) }}%"></span>
+        </span>
+        {{ '%.0f' | format(s.storage.percent_full) }} %
+      </span>
+    {% endif %}
+  {% endif %}
+</div>

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Přehled — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>Přehled</h1>
+
+{% if s.missing_snapshots %}
+<section class="alert">
+  <h2>Drift</h2>
+  <p>Publikace ukazuje na snapshot, který v aptly neexistuje. Takový repozitář nejde
+     přepnout ani vrátit, dokud se to nevyřeší.</p>
+  <ul>
+    {% for pub, name in s.missing_snapshots %}
+      <li><code>{{ pub.prefix }}/{{ pub.distribution }}</code> → chybí <code>{{ name }}</code></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="cards">
+  <article class="card">
+    <span class="num">{{ s.mirrors | length }}</span>
+    <span class="label">mirrorů</span>
+  </article>
+  <article class="card">
+    <span class="num">{{ s.snapshots | length }}</span>
+    <span class="label">snapshotů</span>
+  </article>
+  <article class="card">
+    <span class="num">{{ s.published | length }}</span>
+    <span class="label">publikací</span>
+  </article>
+  <article class="card {{ 'warn' if s.unpublished_snapshots }}">
+    <span class="num">{{ s.unpublished_snapshots | length }}</span>
+    <span class="label">nepublikovaných snapshotů</span>
+  </article>
+</section>
+
+<section>
+  <h2>Co je publikované</h2>
+  {% if s.published %}
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>Prefix / distribuce</th><th>Architektury</th><th>Komponenta</th><th>Snapshot</th></tr>
+      </thead>
+      <tbody>
+        {% for pub in s.published %}
+          {% for src in pub.sources %}
+          <tr>
+            {% if loop.first %}
+            <th rowspan="{{ pub.sources | length }}" scope="rowgroup">
+              {{ pub.prefix }}/{{ pub.distribution }}
+            </th>
+            <td rowspan="{{ pub.sources | length }}">{{ pub.architectures | join(', ') }}</td>
+            {% endif %}
+            <td>{{ src.component }}</td>
+            <td>
+              <code>{{ src.name }}</code>
+              {% if src.name not in s.snapshot_names %}
+                <span class="tag tag-bad">chybí</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="empty">Žádná publikace. Klienti zatím nemají z čeho instalovat.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Stáří mirrorů</h2>
+  {% if s.mirrors %}
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>Mirror</th><th>Distribuce</th><th>Filtr</th><th>Poslední sync</th></tr>
+      </thead>
+      <tbody>
+        {% for m in s.mirrors %}
+        <tr>
+          <th scope="row">{{ m.name }}</th>
+          <td>{{ m.distribution }}</td>
+          <td>{% if m.filter %}<code>{{ m.filter }}</code>{% else %}—{% endif %}</td>
+          <td>
+            {{ m.last_download | age }}
+            {% if m.last_download is none %}<span class="tag tag-bad">nikdy</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="empty">Žádné mirrory.</p>
+  {% endif %}
+</section>
+{% endblock %}
