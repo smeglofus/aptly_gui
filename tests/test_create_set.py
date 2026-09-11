@@ -33,3 +33,45 @@ def test_expected_mirror_names_follow_the_convention() -> None:
 
 def test_a_created_set_is_not_marked_as_adopted() -> None:
     assert _mirror_set().adopted is not True
+
+
+async def test_a_set_whose_mirrors_are_missing_offers_to_make_them(app_client) -> None:
+    """A create job that failed part way leaves a set describing nothing.
+
+    Without a way back the set is stuck: sync refuses because the mirrors are absent,
+    and nothing else creates them.
+    """
+    from sqlalchemy import select
+    from tests.conftest import CSRF
+
+    from aptly_gui.db import MirrorSet
+
+    http, app = await app_client()
+    async with app.state.sessions() as session:
+        session.add(
+            MirrorSet(
+                name="ubuntu-jammy",
+                archive_url="http://archive.ubuntu.com/ubuntu",
+                suites=["jammy"],
+                components=["main"],
+                architectures=["amd64"],
+                publish_prefix="ubuntu",
+                mirror_pattern="{set}-{suite}-{component}",
+            )
+        )
+        await session.commit()
+        stored = (await session.execute(select(MirrorSet))).scalars().all()
+        set_id = [item.id for item in stored if item.name == "ubuntu-jammy"][0]
+
+    async with http:
+        page = await http.get(f"/sets/{set_id}")
+        queued = await http.post(
+            f"/sets/{set_id}/create", data={"csrf_token": CSRF}, follow_redirects=False
+        )
+
+    # The fixture's aptly holds no ubuntu-jammy mirror, so the gap is reported...
+    assert "does not exist in aptly" in page.text or "do not exist in aptly" in page.text
+    assert "Create missing mirrors" in page.text
+    # ...and the button queues the job that fills it.
+    assert queued.status_code == 303
+    assert [call[0] for call in app.state.runner.calls] == ["create"]

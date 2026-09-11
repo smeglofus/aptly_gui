@@ -12,6 +12,21 @@
   {% if mirror_set.filter %}<dt>{% trans %}Filter{% endtrans %}</dt><dd><code>{{ mirror_set.filter }}</code></dd>{% endif %}
 </dl>
 
+{% if missing_mirrors %}
+<div class="alert">
+  <h2>{% trans count=missing_mirrors | length, total=mirror_set.expected_mirrors | length %}{{ count }} of {{ total }} mirrors does not exist in aptly{% pluralize %}{{ count }} of {{ total }} mirrors do not exist in aptly{% endtrans %}</h2>
+  <p>{% trans %}This set describes them, but aptly does not have them — usually because creating them failed part way. Nothing can be synced until they exist.{% endtrans %}</p>
+  <form method="post" action="/sets/{{ mirror_set.id }}/create">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="primary">{% trans %}Create missing mirrors{% endtrans %}</button>
+  </form>
+  <details style="margin-top:10px">
+    <summary>{% trans %}Which ones{% endtrans %}</summary>
+    <ul>{% for name in missing_mirrors %}<li><code>{{ name }}</code></li>{% endfor %}</ul>
+  </details>
+</div>
+{% endif %}
+
 <form method="post" action="/sets/{{ mirror_set.id }}/update">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <button type="submit" class="primary">{% trans %}Sync and snapshot{% endtrans %}</button>

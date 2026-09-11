@@ -337,7 +337,12 @@ class JobRunner:
         missing = [name for name in mirror_set.expected_mirrors if name not in existing]
         if missing:
             await self._finish_step(session, step, StepState.FAILED, "\n".join(missing))
-            raise AptlyError(f"mirrors missing in aptly: {', '.join(missing)}")
+            raise AptlyError(
+                f"{len(missing)} of {len(mirror_set.expected_mirrors)} mirrors this set "
+                "describes do not exist in aptly, so there is nothing to sync. Use "
+                '"Create missing mirrors" on the set, then try again. '
+                f"Missing: {', '.join(missing[:4])}" + (" …" if len(missing) > 4 else "")
+            )
 
         # Stop before downloading rather than after filling the disk the published
         # tree lives on.

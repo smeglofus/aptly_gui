@@ -262,7 +262,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         job = await request.app.state.runner.enqueue(
             JobType.DISCARD,
             entry.get("mirror_set_id"),
-            author="anonymous",
+            author=request.state.user.username,
             params={"snapshots": [name]},
         )
         return RedirectResponse(f"/jobs/{job.id}", status_code=303)
@@ -303,7 +303,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         job = await request.app.state.runner.enqueue(
             JobType.DISCARD,
             set_id,
-            author="anonymous",
+            author=request.state.user.username,
             params={"snapshots": names, "snapshot_set_id": snapshot_set_id},
         )
         return RedirectResponse(f"/jobs/{job.id}", status_code=303)
@@ -398,7 +398,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await session.refresh(mirror_set)
 
         job = await request.app.state.runner.enqueue(
-            JobType.CREATE, mirror_set.id, author="anonymous", params={}
+            JobType.CREATE, mirror_set.id, author=request.state.user.username, params={}
         )
         return RedirectResponse(f"/jobs/{job.id}", status_code=303)
 
@@ -474,6 +474,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 .scalars()
                 .all()
             )
+        cached = await request.app.state.cache.get()
+        present = cached.state.mirror_names
+        missing = [name for name in mirror_set.expected_mirrors if name not in present]
         return await render(
             request,
             "set_detail.html",
@@ -482,12 +485,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             snapshot_sets=snapshot_sets,
             jobs=list(jobs),
             complete_state=SnapshotSetState.COMPLETE,
+            missing_mirrors=missing,
         )
+
+    @app.post("/sets/{set_id}/create")
+    async def set_create_missing(request: Request, set_id: int) -> RedirectResponse:
+        """Make the mirrors a set expects but aptly does not have.
+
+        A create job that failed part way leaves a set describing mirrors that were
+        never made; without this there is no way back to a working set.
+        """
+        job = await request.app.state.runner.enqueue(
+            JobType.CREATE, set_id, author=request.state.user.username, params={}
+        )
+        return RedirectResponse(f"/jobs/{job.id}", status_code=303)
 
     @app.post("/sets/{set_id}/update")
     async def set_update(request: Request, set_id: int) -> RedirectResponse:
         job = await request.app.state.runner.enqueue(
-            JobType.UPDATE, set_id, author="anonymous", params={}
+            JobType.UPDATE, set_id, author=request.state.user.username, params={}
         )
         return RedirectResponse(f"/jobs/{job.id}", status_code=303)
 
@@ -498,7 +514,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         job = await request.app.state.runner.enqueue(
             JobType.SWITCH,
             set_id,
-            author="anonymous",
+            author=request.state.user.username,
             params={"snapshot_set_id": snapshot_set_id},
         )
         return RedirectResponse(f"/jobs/{job.id}", status_code=303)
