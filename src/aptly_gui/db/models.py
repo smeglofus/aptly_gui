@@ -82,6 +82,44 @@ class SnapshotSetState(StrEnum):
     INCOMPLETE = "incomplete"
 
 
+class UserRole(StrEnum):
+    VIEWER = "viewer"
+    OPERATOR = "operator"
+    ADMIN = "admin"
+
+    @property
+    def rank(self) -> int:
+        return {UserRole.VIEWER: 0, UserRole.OPERATOR: 1, UserRole.ADMIN: 2}[self]
+
+    def can(self, required: UserRole) -> bool:
+        return self.rank >= required.rank
+
+
+class User(Base):
+    """A person who can sign in, locally or through the identity provider.
+
+    An OIDC user has no password hash: their credentials never reach this service.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(128), unique=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), default=None)
+    role: Mapped[str] = mapped_column(String(16), default=UserRole.VIEWER)
+    active: Mapped[bool] = mapped_column(default=True)
+    source: Mapped[str] = mapped_column(String(16), default="local")
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=utcnow)
+    last_login: Mapped[datetime | None] = mapped_column(UtcDateTime, default=None)
+
+    @property
+    def is_local(self) -> bool:
+        return self.source == "local"
+
+    def can(self, required: UserRole) -> bool:
+        return self.active and UserRole(self.role).can(required)
+
+
 class AppSetting(Base):
     """Key/value application preferences, e.g. the interface language."""
 

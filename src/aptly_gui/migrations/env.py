@@ -1,7 +1,9 @@
 import asyncio
 from logging.config import fileConfig
+from typing import Any, Literal
 
 from alembic import context
+from alembic.autogenerate.api import AutogenContext
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -28,9 +30,26 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def render_item(type_: str, obj: Any, autogen_context: AutogenContext) -> str | Literal[False]:
+    """Render our UTC column as the plain type it is built on.
+
+    A migration that imported application code would break the moment that code was
+    renamed, and the emitted DDL is identical either way.
+    """
+    if type_ == "type" and obj.__class__.__name__ == "UtcDateTime":
+        autogen_context.imports.add("import sqlalchemy as sa")
+        return "sa.DateTime(timezone=True)"
+    return False
+
+
 def do_run_migrations(connection: Connection) -> None:
     # SQLite cannot ALTER most things in place; batch mode rewrites the table instead.
-    context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        render_as_batch=True,
+        render_item=render_item,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

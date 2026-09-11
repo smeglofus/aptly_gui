@@ -26,6 +26,7 @@
     {% endif %}
 
     <form method="post" action="/sets/adopt">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="name" value="{{ p.name }}">
       <input type="hidden" name="archive_url" value="{{ p.archive_url }}">
       <input type="hidden" name="suites" value="{{ p.suites | join(',') }}">

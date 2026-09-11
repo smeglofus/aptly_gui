@@ -11,6 +11,8 @@ from .models import (
     SnapshotSet,
     SnapshotSetState,
     StepState,
+    User,
+    UserRole,
 )
 from .session import create_all, create_engine, create_session_factory, session_scope
 
@@ -26,6 +28,8 @@ __all__ = [
     "SnapshotSet",
     "SnapshotSetState",
     "StepState",
+    "User",
+    "UserRole",
     "create_all",
     "current_revision",
     "create_engine",

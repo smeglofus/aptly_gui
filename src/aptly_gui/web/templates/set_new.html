@@ -27,6 +27,7 @@
 </section>
 
 <form method="post" action="/sets/new" class="panel">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="field">
     <label for="name">{% trans %}Set name{% endtrans %}</label>
     <input type="text" id="name" name="name" value="{{ form.name }}" placeholder="ubuntu-noble" required>

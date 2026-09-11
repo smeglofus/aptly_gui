@@ -1,0 +1,13 @@
+{% extends "bare.html" %}
+{% block title %}{% trans %}Not allowed{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Not allowed{% endtrans %}</h1>
+<div class="alert">
+  <p>{% trans role=needed %}This needs the {{ role }} role and your account does not have it.{% endtrans %}</p>
+</div>
+<p>
+  <a class="button" href="/">{% trans %}Back to the overview{% endtrans %}</a>
+  <a class="button" href="/logout">{% trans %}Sign out{% endtrans %}</a>
+</p>
+{% endblock %}

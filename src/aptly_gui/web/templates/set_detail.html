@@ -11,6 +11,7 @@
 </dl>
 
 <form method="post" action="/sets/{{ mirror_set.id }}/update">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <button type="submit" class="primary">{% trans %}Sync and snapshot{% endtrans %}</button>
 </form>
 <p class="lead">{% trans %}This downloads updates and freezes them as a snapshot set. Nothing reaches clients until you publish that set below.{% endtrans %}</p>
@@ -75,6 +76,7 @@
         <td>
           {% if snap_set.state == complete_state %}
           <form method="post" action="/sets/{{ mirror_set.id }}/switch" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="snapshot_set_id" value="{{ snap_set.id }}">
             <button type="submit">{% trans %}Publish this set{% endtrans %}</button>
           </form>

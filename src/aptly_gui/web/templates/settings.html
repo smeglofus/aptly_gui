@@ -10,6 +10,7 @@
 {% endif %}
 
 <form method="post" action="/settings" class="panel">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="field">
     <label for="language">{% trans %}Interface language{% endtrans %}</label>
     <select name="language" id="language">

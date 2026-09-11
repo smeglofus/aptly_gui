@@ -406,3 +406,29 @@ footer {
 .presets .button.on { background: var(--accent); border-color: var(--accent-strong); color: var(--accent-contrast); }
 a.button { text-decoration: none; display: inline-block; }
 a.button:hover { text-decoration: none; }
+
+/* --- authentication --- */
+
+body.bare { background: var(--surface-alt); }
+main.narrow { max-width: 460px; }
+main.narrow .panel { background: var(--surface); }
+
+.whoami {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.whoami a { color: var(--accent); }
+
+input[type="password"] {
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 7px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text);
+  max-width: 100%;
+}

@@ -15,6 +15,11 @@ class Settings:
     refresh_seconds: int = 15
     request_timeout: float = 30.0
     default_language: str = DEFAULT_LANGUAGE
+    # Empty means "generate one and keep it in the database", so a fresh install
+    # needs no configuration and a restart does not sign everyone out.
+    secret_key: str = ""
+    session_max_age: int = 14 * 24 * 3600
+    secure_cookies: bool = False
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -27,4 +32,8 @@ class Settings:
             refresh_seconds=int(os.environ.get("APTLY_GUI_REFRESH_SECONDS", cls.refresh_seconds)),
             request_timeout=float(os.environ.get("APTLY_GUI_TIMEOUT", cls.request_timeout)),
             default_language=os.environ.get("APTLY_GUI_LANGUAGE", cls.default_language),
+            secret_key=os.environ.get("APTLY_GUI_SECRET_KEY", cls.secret_key),
+            session_max_age=int(os.environ.get("APTLY_GUI_SESSION_MAX_AGE", cls.session_max_age)),
+            secure_cookies=os.environ.get("APTLY_GUI_SECURE_COOKIES", "").lower()
+            in ("1", "true", "yes"),
         )

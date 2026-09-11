@@ -10,16 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "migrations"
 
-# Databases that carry no revision were built by a version that created tables
-# straight from the models. Each entry says: if this column is present, the schema
-# has already reached that revision. Oldest first.
+# Databases that carry no revision were built from the models rather than migrated.
+# Each entry says: if this table, or this column in it, is present then the schema has
+# already reached that revision. Oldest first.
 #
-# This list is closed. Every database created from now on is stamped by Alembic, so
-# only revisions that shipped before migrations ran on startup can ever appear here.
+# Extend this whenever a migration adds a table or column — test_migrations.py fails
+# if head stops being detectable, which is what stops the list going stale.
 ADOPTION_MARKERS: list[tuple[str, str, str | None]] = [
     ("acaffe887f68", "mirror_sets", None),
     ("1d98f4a90784", "job_steps", "total_bytes"),
     ("2595a4d32cad", "jobs", "expected_steps"),
+    ("f8cd439d47f7", "users", None),
 ]
 
 

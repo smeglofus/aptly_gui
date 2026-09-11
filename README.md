@@ -7,8 +7,7 @@ operation, and roll back when an update goes wrong.
 It talks to aptly over its REST API only and never touches aptly's database.
 
 > **Status: v0.2.** Existing mirrors can be adopted into sets, synced and snapshotted, and
-> published or rolled back from the UI. There is **no authentication yet**, so keep it bound
-> to loopback.
+> published or rolled back from the UI. Sign-in is local or through an OIDC provider.
 
 ## Why
 
@@ -65,6 +64,37 @@ Only one write job runs at a time, because aptly has a single database.
 | `APTLY_GUI_DATABASE_URL` | `sqlite+aiosqlite:///./aptly-gui.db` | Where the GUI keeps its own state |
 | `APTLY_GUI_REFRESH_SECONDS` | `15` | How long a read of aptly is reused |
 | `APTLY_GUI_LANGUAGE` | `en` | Language before one is chosen in Settings |
+| `APTLY_GUI_SECRET_KEY` | generated | Signs session cookies; generated and stored on first run |
+| `APTLY_GUI_SESSION_MAX_AGE` | `1209600` | Seconds a sign-in lasts |
+| `APTLY_GUI_SECURE_COOKIES` | `false` | Set when serving over HTTPS |
+
+## Signing in
+
+The first visit asks for an administrator account; nothing else is reachable until one
+exists. Roles are **viewer** (read), **operator** (run jobs) and **admin** (also settings
+and accounts). Administration is admin-only to read as well as to change.
+
+### OIDC
+
+Set these and a second button appears on the sign-in page. The provider is discovered from
+its issuer, the flow is authorization code with PKCE, and claims are read from the userinfo
+endpoint.
+
+| Variable | Meaning |
+|---|---|
+| `APTLY_GUI_OIDC_ISSUER` | e.g. `https://id.example.com/realms/main` |
+| `APTLY_GUI_OIDC_CLIENT_ID` | Client registered with the provider |
+| `APTLY_GUI_OIDC_CLIENT_SECRET` | Client secret, if the client is confidential |
+| `APTLY_GUI_OIDC_SCOPES` | Default `openid profile email` |
+| `APTLY_GUI_OIDC_USERNAME_CLAIM` | Default `preferred_username`, falls back to email then sub |
+| `APTLY_GUI_OIDC_GROUPS_CLAIM` | Default `groups` |
+| `APTLY_GUI_OIDC_ADMIN_GROUP` | Members become administrators |
+| `APTLY_GUI_OIDC_OPERATOR_GROUP` | Members become operators |
+| `APTLY_GUI_OIDC_DEFAULT_ROLE` | Role for everyone else, default `viewer` |
+| `APTLY_GUI_BASE_URL` | Public URL, when the redirect cannot be derived from the request |
+
+The redirect URI to register is `<base>/auth/oidc/callback`. Group membership is re-applied
+on every sign-in, so the provider stays the authority on who may do what.
 
 ## Translations
 

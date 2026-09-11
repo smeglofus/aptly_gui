@@ -147,3 +147,31 @@ async def test_database_built_before_migrations_is_adopted(engine) -> None:
 
     assert await current_revision(engine) is not None
     assert "expected_steps" in await _columns(engine, "jobs")
+
+
+async def test_head_is_detectable_from_the_schema_alone(engine) -> None:
+    """Guards the adoption marker list against going stale.
+
+    A migration that adds a table or column without a marker would make an unstamped
+    database adopt at the wrong revision and then collide on upgrade.
+    """
+    from sqlalchemy import inspect
+
+    from aptly_gui.db import create_all
+    from aptly_gui.db.migrate import MIGRATIONS_DIR, detect_revision
+
+    await create_all(engine)
+    async with engine.connect() as connection:
+        detected = await connection.run_sync(detect_revision)
+
+    from alembic.script import ScriptDirectory
+
+    script = ScriptDirectory(str(MIGRATIONS_DIR))
+    assert detected == script.get_current_head(), (
+        "add an entry to ADOPTION_MARKERS for the newest migration"
+    )
+    async with engine.connect() as connection:
+        tables = await connection.run_sync(
+            lambda sync_conn: set(inspect(sync_conn).get_table_names())
+        )
+    assert "users" in tables

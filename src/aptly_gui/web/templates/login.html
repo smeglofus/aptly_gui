@@ -1,0 +1,31 @@
+{% extends "bare.html" %}
+{% block title %}{% trans %}Sign in{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Sign in{% endtrans %}</h1>
+
+{% if error %}
+<div class="alert"><p>{{ error }}</p></div>
+{% endif %}
+
+<form method="post" action="/login" class="panel">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="field">
+    <label for="username">{% trans %}Username{% endtrans %}</label>
+    <input type="text" id="username" name="username" autocomplete="username" autofocus required>
+  </div>
+  <div class="field">
+    <label for="password">{% trans %}Password{% endtrans %}</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required>
+  </div>
+  <button type="submit" class="primary">{% trans %}Sign in{% endtrans %}</button>
+</form>
+
+{% if oidc_enabled %}
+<div class="panel">
+  <p>{% trans %}Or use your organisation account.{% endtrans %}</p>
+  <a class="button" href="/auth/oidc/start?next={{ next | urlencode }}">{% trans %}Sign in with the identity provider{% endtrans %}</a>
+</div>
+{% endif %}
+{% endblock %}

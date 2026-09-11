@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+from urllib.parse import quote
 
-from fastapi import FastAPI, Form, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -15,6 +17,22 @@ from sqlalchemy.orm import selectinload
 
 from .. import i18n
 from ..aptly import AptlyClient
+from ..auth import (
+    OidcClient,
+    OidcConfig,
+    OidcError,
+    clear_session,
+    csrf_matches,
+    describe_weakness,
+    hash_password,
+    is_public,
+    make_verifier,
+    new_csrf_token,
+    read_session,
+    required_role,
+    verify_password,
+    write_session,
+)
 from ..config import LANGUAGES, Settings
 from ..db import (
     AppSetting,
@@ -24,6 +42,8 @@ from ..db import (
     MirrorSet,
     SnapshotSet,
     SnapshotSetState,
+    User,
+    UserRole,
     create_engine,
     create_session_factory,
     upgrade_database,
@@ -62,6 +82,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         sessions = create_session_factory(engine)
 
         app.state.settings = settings
+        app.state.secret_key = await _resolve_secret_key(sessions, settings)
+        app.state.session_max_age = settings.session_max_age
+        app.state.secure_cookies = settings.secure_cookies
+        app.state.oidc_config = OidcConfig.from_env()
+        app.state.oidc = (
+            OidcClient(app.state.oidc_config) if app.state.oidc_config.enabled else None
+        )
+        app.state.has_users = await _any_user_exists(sessions)
         app.state.client = client
         app.state.sessions = sessions
         app.state.cache = StateCache(client, refresh_seconds=settings.refresh_seconds)
@@ -75,8 +103,69 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await client.aclose()
             await engine.dispose()
 
-    app = FastAPI(title="aptly-gui", lifespan=lifespan)
+    app = FastAPI(title="aptly-gui", lifespan=lifespan, dependencies=[Depends(_check_csrf)])
     app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
+
+    @app.middleware("http")
+    async def guard(request: Request, call_next: Any) -> Response:
+        """Decide who may make this request before any handler runs.
+
+        The body is deliberately not touched here — reading the form in middleware
+        would consume it before the endpoint could. CSRF is a dependency instead.
+        """
+        path = request.url.path
+        session = read_session(request)
+        request.state.user = await _session_user(request, session)
+
+        # Even a signed-out visitor needs a token, or the login form could not be
+        # submitted; it is bound to their cookie exactly like any other.
+        issued = None
+        request.state.csrf = session.get("csrf")
+        if not request.state.csrf:
+            issued = new_csrf_token()
+            request.state.csrf = issued
+
+        response = await _dispatch(request, call_next, path)
+        if issued and "set-cookie" not in response.headers:
+            write_session(request, response, {**session, "csrf": issued})
+        return response
+
+    async def _dispatch(request: Request, call_next: Any, path: str) -> Response:
+        if path.startswith("/static") or path == "/healthz":
+            return cast(Response, await call_next(request))
+
+        # Before the first account exists every road leads to creating it.
+        if not request.app.state.has_users:
+            if path != "/setup":
+                return RedirectResponse("/setup", status_code=303)
+            return cast(Response, await call_next(request))
+        if path == "/setup":
+            return RedirectResponse("/", status_code=303)
+
+        if is_public(path):
+            return cast(Response, await call_next(request))
+
+        user = request.state.user
+        if user is None:
+            return RedirectResponse(f"/login?next={quote(path, safe='/')}", status_code=303)
+
+        needed = required_role(request.method, path)
+        if not user.can(needed):
+            i18n.activate(request.app.state.language)
+            return templates.TemplateResponse(
+                request=request,
+                name="forbidden.html",
+                context={
+                    "page": "",
+                    "locale": request.app.state.language,
+                    "languages": LANGUAGES,
+                    "user": user,
+                    "csrf_token": request.state.csrf,
+                    "needed": needed,
+                },
+                status_code=403,
+            )
+        return cast(Response, await call_next(request))
 
     async def render(request: Request, template: str, **context: Any) -> HTMLResponse:
         i18n.activate(request.app.state.language)
@@ -90,6 +179,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "now": datetime.now(UTC),
                 "locale": request.app.state.language,
                 "languages": LANGUAGES,
+                "user": getattr(request.state, "user", None),
+                "csrf_token": getattr(request.state, "csrf", None),
+                "oidc_enabled": request.app.state.oidc is not None,
                 **context,
             },
         )
@@ -399,6 +491,169 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             job = await session.get(Job, job_id, options=[selectinload(Job.steps)])
         return await render(request, "_job_progress.html", job=job)
 
+    # --- authentication -------------------------------------------------
+
+    @app.get("/setup", response_class=HTMLResponse)
+    async def setup_form(request: Request, error: str | None = None) -> HTMLResponse:
+        return await render(request, "setup.html", page="", error=error)
+
+    @app.post("/setup")
+    async def setup_submit(
+        request: Request,
+        username: str = Form(...),
+        password: str = Form(...),
+        password_again: str = Form(...),
+    ) -> Response:
+        problem = _password_problem(password, password_again)
+        if problem or not username.strip():
+            return await render(
+                request, "setup.html", page="", error=problem or i18n.gettext("Pick a username.")
+            )
+        async with request.app.state.sessions() as session:
+            user = User(
+                username=username.strip(),
+                password_hash=hash_password(password),
+                role=UserRole.ADMIN,
+                source="local",
+            )
+            session.add(user)
+            session.add(AuditEntry(actor=username.strip(), action="user.create", target=username))
+            await session.commit()
+            await session.refresh(user)
+        request.app.state.has_users = True
+        return _sign_in(request, user, "/")
+
+    @app.get("/login", response_class=HTMLResponse)
+    async def login_form(request: Request, next: str = "/", error: str | None = None) -> Response:
+        if request.state.user is not None:
+            return RedirectResponse("/", status_code=303)
+        return await render(request, "login.html", page="", next=next, error=error)
+
+    @app.post("/login")
+    async def login_submit(
+        request: Request,
+        username: str = Form(...),
+        password: str = Form(...),
+        next: str = Form("/"),
+    ) -> Response:
+        async with request.app.state.sessions() as session:
+            user = (
+                await session.execute(select(User).where(User.username == username))
+            ).scalar_one_or_none()
+            # Verify even when the user is unknown, so a wrong name and a wrong
+            # password take the same time to answer.
+            ok = verify_password(user.password_hash if user else None, password)
+            if user is None or not ok or not user.active:
+                session.add(
+                    AuditEntry(actor=username, action="login", result="denied", target="local")
+                )
+                await session.commit()
+                return await render(
+                    request,
+                    "login.html",
+                    page="",
+                    next=next,
+                    error=i18n.gettext("That username and password do not match."),
+                )
+            user.last_login = datetime.now(UTC)
+            session.add(AuditEntry(actor=user.username, action="login", target="local"))
+            await session.commit()
+            await session.refresh(user)
+        return _sign_in(request, user, _safe_next(next))
+
+    @app.get("/logout")
+    async def logout(request: Request) -> Response:
+        response = RedirectResponse("/login", status_code=303)
+        clear_session(response)
+        return response
+
+    @app.get("/auth/oidc/start")
+    async def oidc_start(request: Request, next: str = "/") -> Response:
+        client = request.app.state.oidc
+        if client is None:
+            return RedirectResponse("/login", status_code=303)
+        state = new_csrf_token()
+        verifier = make_verifier()
+        try:
+            url = await client.authorization_url(
+                state=state, verifier=verifier, redirect_uri=_redirect_uri(request)
+            )
+        except OidcError as exc:
+            return await render(request, "login.html", page="", next=next, error=str(exc))
+        response = RedirectResponse(url, status_code=303)
+        write_session(
+            request,
+            response,
+            {
+                "csrf": request.state.csrf or new_csrf_token(),
+                "oidc_state": state,
+                "oidc_verifier": verifier,
+                "oidc_next": _safe_next(next),
+            },
+        )
+        return response
+
+    @app.get("/auth/oidc/callback")
+    async def oidc_callback(
+        request: Request, code: str | None = None, state: str | None = None
+    ) -> Response:
+        client = request.app.state.oidc
+        stored = read_session(request)
+        if client is None or not code:
+            return RedirectResponse("/login", status_code=303)
+        if not state or not csrf_matches(stored.get("oidc_state"), state):
+            return await render(
+                request,
+                "login.html",
+                page="",
+                next="/",
+                error=i18n.gettext("The sign-in attempt could not be verified. Try again."),
+            )
+        try:
+            token = await client.exchange(
+                code=code,
+                verifier=str(stored.get("oidc_verifier", "")),
+                redirect_uri=_redirect_uri(request),
+            )
+            claims = await client.userinfo(token)
+            username = client.username_from(claims)
+            role = client.role_from(claims)
+        except OidcError as exc:
+            return await render(request, "login.html", page="", next="/", error=str(exc))
+
+        async with request.app.state.sessions() as session:
+            user = (
+                await session.execute(select(User).where(User.username == username))
+            ).scalar_one_or_none()
+            if user is None:
+                user = User(username=username, role=role, source="oidc")
+                session.add(user)
+                session.add(
+                    AuditEntry(actor=username, action="user.create", target="oidc", result=role)
+                )
+            elif user.source == "oidc":
+                # Group membership is the provider's to decide, so re-apply it on
+                # every sign-in rather than letting a local edit drift from it.
+                user.role = role
+            if not user.active:
+                session.add(
+                    AuditEntry(actor=username, action="login", result="denied", target="oidc")
+                )
+                await session.commit()
+                return await render(
+                    request,
+                    "login.html",
+                    page="",
+                    next="/",
+                    error=i18n.gettext("That account is deactivated."),
+                )
+            user.last_login = datetime.now(UTC)
+            session.add(AuditEntry(actor=username, action="login", target="oidc"))
+            await session.commit()
+            await session.refresh(user)
+        request.app.state.has_users = True
+        return _sign_in(request, user, _safe_next(str(stored.get("oidc_next", "/"))))
+
     # --- settings -------------------------------------------------------
 
     @app.get("/settings", response_class=HTMLResponse)
@@ -426,6 +681,115 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await session.commit()
         request.app.state.language = language
         return RedirectResponse("/settings?saved=1", status_code=303)
+
+    # --- users ----------------------------------------------------------
+
+    @app.get("/users", response_class=HTMLResponse)
+    async def users_index(request: Request, error: str | None = None) -> HTMLResponse:
+        async with request.app.state.sessions() as session:
+            rows = (await session.execute(select(User).order_by(User.username))).scalars().all()
+        return await render(
+            request, "users.html", page="users", users=list(rows), roles=list(UserRole), error=error
+        )
+
+    @app.post("/users/create")
+    async def users_create(
+        request: Request,
+        username: str = Form(...),
+        password: str = Form(...),
+        password_again: str = Form(...),
+        role: str = Form(UserRole.VIEWER),
+    ) -> Response:
+        problem = _password_problem(password, password_again)
+        if problem or not username.strip():
+            return RedirectResponse(f"/users?error={quote(problem or 'name')}", status_code=303)
+        async with request.app.state.sessions() as session:
+            taken = (
+                await session.execute(select(User).where(User.username == username.strip()))
+            ).scalar_one_or_none()
+            if taken is not None:
+                return RedirectResponse("/users?error=taken", status_code=303)
+            session.add(
+                User(
+                    username=username.strip(),
+                    password_hash=hash_password(password),
+                    role=_valid_role(role),
+                    source="local",
+                )
+            )
+            session.add(
+                AuditEntry(
+                    actor=request.state.user.username, action="user.create", target=username.strip()
+                )
+            )
+            await session.commit()
+        return RedirectResponse("/users", status_code=303)
+
+    @app.post("/users/{user_id}/role")
+    async def users_role(request: Request, user_id: int, role: str = Form(...)) -> Response:
+        async with request.app.state.sessions() as session:
+            user = await session.get(User, user_id)
+            if user is None:
+                return RedirectResponse("/users", status_code=303)
+            if await _would_orphan_admins(session, user, new_role=_valid_role(role)):
+                return RedirectResponse("/users?error=last_admin", status_code=303)
+            user.role = _valid_role(role)
+            session.add(
+                AuditEntry(
+                    actor=request.state.user.username,
+                    action="user.role",
+                    target=user.username,
+                    result=user.role,
+                )
+            )
+            await session.commit()
+        return RedirectResponse("/users", status_code=303)
+
+    @app.post("/users/{user_id}/active")
+    async def users_active(request: Request, user_id: int, active: str = Form("0")) -> Response:
+        wanted = active in ("1", "true", "on")
+        async with request.app.state.sessions() as session:
+            user = await session.get(User, user_id)
+            if user is None:
+                return RedirectResponse("/users", status_code=303)
+            if not wanted and await _would_orphan_admins(session, user, deactivating=True):
+                return RedirectResponse("/users?error=last_admin", status_code=303)
+            user.active = wanted
+            session.add(
+                AuditEntry(
+                    actor=request.state.user.username,
+                    action="user.active",
+                    target=user.username,
+                    result="active" if wanted else "inactive",
+                )
+            )
+            await session.commit()
+        return RedirectResponse("/users", status_code=303)
+
+    @app.post("/users/{user_id}/password")
+    async def users_password(
+        request: Request,
+        user_id: int,
+        password: str = Form(...),
+        password_again: str = Form(...),
+    ) -> Response:
+        problem = _password_problem(password, password_again)
+        if problem:
+            return RedirectResponse(f"/users?error={quote(problem)}", status_code=303)
+        async with request.app.state.sessions() as session:
+            user = await session.get(User, user_id)
+            if user is None or not user.is_local:
+                return RedirectResponse("/users?error=not_local", status_code=303)
+            user.password_hash = hash_password(password)
+            session.add(
+                AuditEntry(
+                    actor=request.state.user.username,
+                    action="user.password",
+                    target=user.username,
+                )
+            )
+            await session.commit()
+        return RedirectResponse("/users", status_code=303)
 
     # --- misc -----------------------------------------------------------
 
@@ -520,6 +884,103 @@ def _managed_map(sets: list[MirrorSet]) -> dict[str, str]:
     return {name: item.name for item in sets for name in item.expected_mirrors}
 
 
+def _sign_in(request: Request, user: User, destination: str) -> Response:
+    response = RedirectResponse(destination, status_code=303)
+    write_session(request, response, {"uid": user.id, "csrf": new_csrf_token()})
+    return response
+
+
+def _safe_next(value: str) -> str:
+    """Only ever redirect within this site, never to a URL an attacker supplied."""
+    if not value.startswith("/") or value.startswith("//"):
+        return "/"
+    return value
+
+
+def _redirect_uri(request: Request) -> str:
+    base = request.app.state.oidc_config.base_url
+    if base:
+        return f"{base.rstrip('/')}/auth/oidc/callback"
+    return str(request.url_for("oidc_callback"))
+
+
+def _password_problem(password: str, again: str) -> str | None:
+    if password != again:
+        return i18n.gettext("The two passwords are not the same.")
+    if describe_weakness(password) == "too_short":
+        return i18n.gettext("Use at least 10 characters.")
+    return None
+
+
+async def _session_user(request: Request, session_data: dict[str, Any]) -> User | None:
+    uid = session_data.get("uid")
+    if not uid or not hasattr(request.app.state, "sessions"):
+        return None
+    async with request.app.state.sessions() as session:
+        user = await session.get(User, int(uid))
+    return user if user and user.active else None
+
+
+async def _check_csrf(request: Request) -> None:
+    """Every form post carries a token tied to the session cookie."""
+    if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+        return
+    if request.url.path.startswith("/static"):
+        return
+    form = await request.form()
+    submitted = form.get("csrf_token")
+    if not csrf_matches(getattr(request.state, "csrf", None), str(submitted or "")):
+        raise HTTPException(status_code=400, detail="csrf")
+
+
+async def _any_user_exists(sessions: Any) -> bool:
+    async with sessions() as session:
+        found = (await session.execute(select(User).limit(1))).scalar_one_or_none()
+    return found is not None
+
+
+async def _resolve_secret_key(sessions: Any, settings: Settings) -> str:
+    """Keep one signing key so a restart does not sign everybody out."""
+    if settings.secret_key:
+        return settings.secret_key
+    async with sessions() as session:
+        row = await session.get(AppSetting, "secret_key")
+        if row is None:
+            row = AppSetting(key="secret_key", value=secrets.token_urlsafe(48))
+            session.add(row)
+            await session.commit()
+        return str(row.value)
+
+
+def _valid_role(value: str) -> str:
+    try:
+        return UserRole(value)
+    except ValueError:
+        return UserRole.VIEWER
+
+
+async def _would_orphan_admins(
+    session: Any, user: User, *, new_role: str | None = None, deactivating: bool = False
+) -> bool:
+    """Refuse the change that would leave nobody able to administer the instance."""
+    if user.role != UserRole.ADMIN:
+        return False
+    if new_role is not None and new_role == UserRole.ADMIN:
+        return False
+    others = (
+        (
+            await session.execute(
+                select(User).where(
+                    User.role == UserRole.ADMIN, User.active.is_(True), User.id != user.id
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return not others and (deactivating or new_role != UserRole.ADMIN)
+
+
 def _blank_form() -> dict[str, str]:
     return {
         "name": "",
@@ -601,6 +1062,9 @@ def _job_state(value: str) -> str:
         "interrupted": i18n.gettext("interrupted"),
         "pending": i18n.gettext("pending"),
         "skipped": i18n.gettext("skipped"),
+        "viewer": i18n.gettext("viewer"),
+        "operator": i18n.gettext("operator"),
+        "admin": i18n.gettext("administrator"),
     }.get(value, value)
 
 

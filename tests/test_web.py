@@ -1,99 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
-
-import httpx
 import pytest
 from sqlalchemy import select
+from tests.conftest import CSRF, _state
 
-from aptly_gui import i18n
-from aptly_gui.aptly import Mirror, Published, Snapshot, Storage
-from aptly_gui.config import Settings
-from aptly_gui.db import MirrorSet, create_all, create_engine, create_session_factory
-from aptly_gui.web.app import create_app
-from aptly_gui.web.state import AptlyState, CachedState
-
-NOW = datetime.now(UTC)
-
-
-def _state(**overrides: Any) -> AptlyState:
-    base: dict[str, Any] = {
-        "fetched_at": NOW,
-        "version": "1.6.1",
-        "storage": Storage(total_mb=59360, free_mb=23383, percent_full=60.6),
-        "mirrors": [
-            Mirror(
-                name="ubuntu-noble-noble-main",
-                archive_url="http://archive.ubuntu.com/ubuntu",
-                distribution="noble",
-                components=["main"],
-                architectures=["amd64"],
-                filter=None,
-                last_download=NOW,
-            )
-        ],
-        "snapshots": [
-            Snapshot(name="ubuntu-noble-noble-main-20260911T0800Z", created_at=NOW, description="")
-        ],
-        "published": [
-            Published.parse(
-                {
-                    "Prefix": "ubuntu",
-                    "Distribution": "noble",
-                    "Architectures": ["amd64"],
-                    "Sources": [
-                        {"Component": "main", "Name": "ubuntu-noble-noble-main-20260911T0800Z"}
-                    ],
-                }
-            )
-        ],
-    }
-    return AptlyState(**{**base, **overrides})
-
-
-class FakeCache:
-    def __init__(self, cached: CachedState) -> None:
-        self.cached = cached
-
-    async def get(self, *, force: bool = False) -> CachedState:
-        return self.cached
-
-
-class FakeRunner:
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, int, dict[str, Any]]] = []
-
-    async def enqueue(
-        self, job_type: str, mirror_set_id: int, *, author: str, params: dict[str, Any]
-    ) -> Any:
-        self.calls.append((job_type, mirror_set_id, params))
-        return type("Job", (), {"id": len(self.calls)})()
-
-
-@pytest.fixture
-async def app_client(tmp_path: Path):
-    engines = []
-
-    async def build(cached: CachedState | None = None) -> tuple[httpx.AsyncClient, Any]:
-        engine = create_engine(f"sqlite+aiosqlite:///{tmp_path / 'test.db'}")
-        engines.append(engine)
-        await create_all(engine)
-        sessions = create_session_factory(engine)
-
-        app = create_app(Settings(database_url=f"sqlite+aiosqlite:///{tmp_path / 'test.db'}"))
-        app.state.cache = FakeCache(cached or CachedState(state=_state(), stale=False, error=None))
-        app.state.sessions = sessions
-        app.state.language = "en"
-        app.state.runner = FakeRunner()
-        transport = httpx.ASGITransport(app=app)
-        return httpx.AsyncClient(transport=transport, base_url="http://test"), app
-
-    yield build
-    for engine in engines:
-        await engine.dispose()
-    i18n.activate("en")
+from aptly_gui.db import MirrorSet
+from aptly_gui.web.state import CachedState
 
 
 @pytest.mark.parametrize(
@@ -150,6 +62,7 @@ async def test_adopting_records_the_set_without_touching_aptly(app_client) -> No
         response = await http.post(
             "/sets/adopt",
             data={
+                "csrf_token": CSRF,
                 "name": "ubuntu-noble",
                 "archive_url": "http://archive.ubuntu.com/ubuntu",
                 "suites": "noble,noble-updates",
@@ -175,7 +88,9 @@ async def test_adopting_records_the_set_without_touching_aptly(app_client) -> No
 async def test_saving_language_switches_the_interface(app_client) -> None:
     http, app = await app_client()
     async with http:
-        await http.post("/settings", data={"language": "cs"}, follow_redirects=False)
+        await http.post(
+            "/settings", data={"language": "cs", "csrf_token": CSRF}, follow_redirects=False
+        )
         response = await http.get("/")
     assert app.state.language == "cs"
     assert "Přehled" in response.text
@@ -184,7 +99,9 @@ async def test_saving_language_switches_the_interface(app_client) -> None:
 async def test_unknown_language_is_rejected(app_client) -> None:
     http, app = await app_client()
     async with http:
-        await http.post("/settings", data={"language": "klingon"}, follow_redirects=False)
+        await http.post(
+            "/settings", data={"language": "klingon", "csrf_token": CSRF}, follow_redirects=False
+        )
     assert app.state.language == "en"
 
 
@@ -202,6 +119,7 @@ async def test_creating_a_set_queues_a_job_to_make_the_mirrors(app_client) -> No
         response = await http.post(
             "/sets/new",
             data={
+                "csrf_token": CSRF,
                 "name": "debian-trixie",
                 "archive_url": "http://deb.debian.org/debian",
                 "suites": "trixie",
@@ -233,8 +151,10 @@ async def test_duplicate_set_name_is_refused_without_queueing_anything(app_clien
         "filter": "",
     }
     async with http:
-        await http.post("/sets/new", data=payload, follow_redirects=False)
-        second = await http.post("/sets/new", data=payload, follow_redirects=False)
+        await http.post("/sets/new", data={**payload, "csrf_token": CSRF}, follow_redirects=False)
+        second = await http.post(
+            "/sets/new", data={**payload, "csrf_token": CSRF}, follow_redirects=False
+        )
     assert second.status_code == 200
     assert "already exists" in second.text
     assert len(app.state.runner.calls) == 1
@@ -257,7 +177,7 @@ async def test_published_snapshot_cannot_be_deleted(app_client) -> None:
         page = await http.get("/snapshots/discard?name=ubuntu-noble-noble-main-20260911T0800Z")
         posted = await http.post(
             "/snapshots/discard",
-            data={"name": "ubuntu-noble-noble-main-20260911T0800Z"},
+            data={"name": "ubuntu-noble-noble-main-20260911T0800Z", "csrf_token": CSRF},
             follow_redirects=False,
         )
     assert "is published" in page.text
@@ -274,7 +194,7 @@ async def test_orphan_snapshot_can_be_deleted(app_client) -> None:
         page = await http.get("/snapshots/discard?name=ubuntu-noble-noble-main-20260911T0800Z")
         posted = await http.post(
             "/snapshots/discard",
-            data={"name": "ubuntu-noble-noble-main-20260911T0800Z"},
+            data={"name": "ubuntu-noble-noble-main-20260911T0800Z", "csrf_token": CSRF},
             follow_redirects=False,
         )
     assert "Delete it" in page.text
@@ -287,7 +207,9 @@ async def test_deleting_an_unknown_snapshot_does_nothing(app_client) -> None:
     http, app = await app_client()
     async with http:
         posted = await http.post(
-            "/snapshots/discard", data={"name": "does-not-exist"}, follow_redirects=False
+            "/snapshots/discard",
+            data={"name": "does-not-exist", "csrf_token": CSRF},
+            follow_redirects=False,
         )
     assert posted.status_code == 303
     assert app.state.runner.calls == []

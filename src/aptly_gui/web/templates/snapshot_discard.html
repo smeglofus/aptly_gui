@@ -28,6 +28,7 @@
       <dt>{% trans %}Snapshot{% endtrans %}</dt><dd><code>{{ name }}</code></dd>
     </dl>
     <form method="post" action="/snapshots/discard">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="name" value="{{ name }}">
       <button type="submit" class="danger">{% trans %}Delete it{% endtrans %}</button>
       <a class="button" href="/snapshots">{% trans %}Cancel{% endtrans %}</a>

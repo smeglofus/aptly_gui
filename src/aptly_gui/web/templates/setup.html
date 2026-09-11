@@ -1,0 +1,29 @@
+{% extends "bare.html" %}
+{% block title %}{% trans %}First run{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Create the first administrator{% endtrans %}</h1>
+<p class="lead">{% trans %}There are no accounts yet, so nothing is protected. This account will be able to manage everything, including other users.{% endtrans %}</p>
+
+{% if error %}
+<div class="alert"><p>{{ error }}</p></div>
+{% endif %}
+
+<form method="post" action="/setup" class="panel">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="field">
+    <label for="username">{% trans %}Username{% endtrans %}</label>
+    <input type="text" id="username" name="username" autocomplete="username" autofocus required>
+  </div>
+  <div class="field">
+    <label for="password">{% trans %}Password{% endtrans %}</label>
+    <input type="password" id="password" name="password" autocomplete="new-password" required>
+    <p class="hint">{% trans %}At least 10 characters.{% endtrans %}</p>
+  </div>
+  <div class="field">
+    <label for="password_again">{% trans %}Password again{% endtrans %}</label>
+    <input type="password" id="password_again" name="password_again" autocomplete="new-password" required>
+  </div>
+  <button type="submit" class="primary">{% trans %}Create the account{% endtrans %}</button>
+</form>
+{% endblock %}
