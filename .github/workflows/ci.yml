@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy src
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+
+      # No official aptly image exists, so the demo environment doubles as the
+      # test fixture and pins which aptly version the client is verified against.
+      - name: Start aptly
+        run: |
+          docker build -t aptly-test ./demo
+          docker run -d --name aptly -p 127.0.0.1:8079:8080 aptly-test
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8079/api/ready && break
+            sleep 2
+          done
+
+      - run: pytest -v
+        env:
+          APTLY_API_URL: http://127.0.0.1:8079
+
+      - name: aptly logs
+        if: failure()
+        run: docker logs aptly

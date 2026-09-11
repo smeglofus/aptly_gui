@@ -6,8 +6,9 @@ operation, and roll back when an update goes wrong.
 
 It talks to aptly over its REST API only and never touches aptly's database.
 
-> **Status: design phase.** The proof of concept is done — the full mirror lifecycle has
-> been validated against a live aptly 1.6.1 — but no application code exists yet.
+> **Status: early.** The aptly API client is written and covered by integration tests that
+> drive a real mirror through sync, snapshot, publish, switch and rollback against aptly
+> 1.6.1. There is no web UI yet — that is v0.1.
 
 ## Why
 
@@ -36,6 +37,21 @@ curl -s http://127.0.0.1:8079/api/version
 ```
 
 See [`demo/README.md`](demo/README.md) for creating a small filtered mirror to test against.
+
+## Tests
+
+```sh
+python -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/pytest                      # integration tests skip if no aptly is running
+```
+
+Integration tests look for `APTLY_API_URL`, defaulting to the demo instance above. They
+create their own mirrors under a random `test-*` name and clean up after themselves, but
+they do download one real package from `deb.debian.org`.
+
+Since aptly publishes no OpenAPI spec, these tests are the only thing standing between a
+new aptly release and a silently broken client. Run them against every aptly version you
+intend to support.
 
 ## License
 
