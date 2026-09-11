@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}New mirror set{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}New mirror set{% endtrans %}</h1>
+<p class="lead">{% trans %}Creates one aptly mirror for every suite and component combination. Nothing is downloaded yet — that is the sync afterwards.{% endtrans %}</p>
+
+{% if error %}
+<div class="alert"><strong>{% trans %}Could not create the set{% endtrans %}</strong><p>{{ error }}</p></div>
+{% endif %}
+
+<form method="post" action="/sets/new" class="panel">
+  <div class="field">
+    <label for="name">{% trans %}Set name{% endtrans %}</label>
+    <input type="text" id="name" name="name" value="{{ form.name }}" placeholder="ubuntu-noble" required>
+    <p class="hint">{% trans %}Mirrors are named set-suite-component, so a set called ubuntu-noble with suite noble and component main becomes ubuntu-noble-noble-main.{% endtrans %}</p>
+  </div>
+
+  <div class="field">
+    <label for="archive_url">{% trans %}Archive URL{% endtrans %}</label>
+    <input type="text" id="archive_url" name="archive_url" size="60" value="{{ form.archive_url }}"
+           placeholder="http://archive.ubuntu.com/ubuntu" required>
+  </div>
+
+  <div class="field">
+    <label for="suites">{% trans %}Suites{% endtrans %}</label>
+    <input type="text" id="suites" name="suites" size="60" value="{{ form.suites }}"
+           placeholder="noble, noble-updates, noble-security, noble-backports" required>
+    <p class="hint">{% trans %}Comma separated. Each suite becomes its own publication.{% endtrans %}</p>
+  </div>
+
+  <div class="field">
+    <label for="components">{% trans %}Components{% endtrans %}</label>
+    <input type="text" id="components" name="components" size="60" value="{{ form.components }}"
+           placeholder="main, restricted, universe, multiverse" required>
+    <p class="hint">{% trans %}Comma separated. Each component needs its own mirror, otherwise aptly merges them into one on publish and clients stop seeing them separately.{% endtrans %}</p>
+  </div>
+
+  <div class="field">
+    <label for="architectures">{% trans %}Architectures{% endtrans %}</label>
+    <input type="text" id="architectures" name="architectures" value="{{ form.architectures }}"
+           placeholder="amd64" required>
+  </div>
+
+  <div class="field">
+    <label for="keyrings">{% trans %}Keyrings{% endtrans %}</label>
+    <input type="text" id="keyrings" name="keyrings" size="60" value="{{ form.keyrings }}"
+           placeholder="/usr/share/keyrings/ubuntu-archive-keyring.gpg">
+    <p class="hint">{% trans %}Path on the aptly side, used to verify the upstream Release. Use the combined archive keyring; per-release ones often fail to verify.{% endtrans %}</p>
+  </div>
+
+  <div class="field">
+    <label for="filter">{% trans %}Filter{% endtrans %}</label>
+    <input type="text" id="filter" name="filter" size="60" value="{{ form.filter }}" placeholder="nginx">
+    <p class="hint">{% trans %}Optional aptly filter. Useful for trying things out without mirroring a whole archive.{% endtrans %}</p>
+  </div>
+
+  <div class="field">
+    <label for="publish_prefix">{% trans %}Publish prefix{% endtrans %}</label>
+    <input type="text" id="publish_prefix" name="publish_prefix" value="{{ form.publish_prefix }}" required>
+  </div>
+
+  <div class="field">
+    <label for="signing_key">{% trans %}Signing key{% endtrans %}</label>
+    <input type="text" id="signing_key" name="signing_key" value="{{ form.signing_key }}">
+    <p class="hint">{% trans %}Key id or e-mail used when publishing. The private key stays on the aptly side.{% endtrans %}</p>
+  </div>
+
+  <button type="submit" class="primary">{% trans %}Create the mirrors{% endtrans %}</button>
+</form>
+{% endblock %}

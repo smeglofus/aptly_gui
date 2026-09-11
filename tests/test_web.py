@@ -186,3 +186,55 @@ async def test_unknown_language_is_rejected(app_client) -> None:
     async with http:
         await http.post("/settings", data={"language": "klingon"}, follow_redirects=False)
     assert app.state.language == "en"
+
+
+async def test_new_set_form_renders(app_client) -> None:
+    http, _ = await app_client()
+    async with http:
+        response = await http.get("/sets/new")
+    assert response.status_code == 200
+    assert 'name="archive_url"' in response.text
+
+
+async def test_creating_a_set_queues_a_job_to_make_the_mirrors(app_client) -> None:
+    http, app = await app_client()
+    async with http:
+        response = await http.post(
+            "/sets/new",
+            data={
+                "name": "debian-trixie",
+                "archive_url": "http://deb.debian.org/debian",
+                "suites": "trixie",
+                "components": "main,contrib",
+                "architectures": "amd64",
+                "publish_prefix": "debian",
+                "keyrings": "/usr/share/keyrings/debian-archive-keyring.gpg",
+                "signing_key": "",
+                "filter": "",
+            },
+            follow_redirects=False,
+        )
+    assert response.status_code == 303
+    # Unlike adoption, creating a set does reach aptly — through a job.
+    assert [call[0] for call in app.state.runner.calls] == ["create"]
+
+
+async def test_duplicate_set_name_is_refused_without_queueing_anything(app_client) -> None:
+    http, app = await app_client()
+    payload = {
+        "name": "debian-trixie",
+        "archive_url": "http://deb.debian.org/debian",
+        "suites": "trixie",
+        "components": "main",
+        "architectures": "amd64",
+        "publish_prefix": "debian",
+        "keyrings": "",
+        "signing_key": "",
+        "filter": "",
+    }
+    async with http:
+        await http.post("/sets/new", data=payload, follow_redirects=False)
+        second = await http.post("/sets/new", data=payload, follow_redirects=False)
+    assert second.status_code == 200
+    assert "already exists" in second.text
+    assert len(app.state.runner.calls) == 1

@@ -5,7 +5,10 @@
 <h1>{% trans %}Mirror sets{% endtrans %}</h1>
 <p class="lead">{% trans %}A set groups the mirrors that make up one upstream. aptly does not store that grouping, which is why updates and rollback need it.{% endtrans %}</p>
 
-<p><a class="button" href="/sets/adopt">{% trans %}Adopt existing mirrors{% endtrans %}</a></p>
+<p>
+  <a class="button" href="/sets/new">{% trans %}New mirror set{% endtrans %}</a>
+  <a class="button" href="/sets/adopt">{% trans %}Adopt existing mirrors{% endtrans %}</a>
+</p>
 
 {% if sets %}
 <div class="scroll">

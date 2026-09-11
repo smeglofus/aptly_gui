@@ -61,6 +61,7 @@ class JobState(StrEnum):
 
 
 class JobType(StrEnum):
+    CREATE = "create"
     UPDATE = "update"
     # Rollback is the same operation as a forward switch, just to an older set.
     SWITCH = "switch"

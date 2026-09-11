@@ -50,6 +50,8 @@ def order_suites(suites: list[str]) -> list[str]:
 def _expected_steps(job_type: JobType, mirror_set: MirrorSet) -> int:
     """How many steps the job will create, so the overall bar is honest from the start."""
     mirrors = len(mirror_set.suites) * len(mirror_set.components)
+    if job_type is JobType.CREATE:
+        return mirrors
     if job_type is JobType.UPDATE:
         return 1 + mirrors * 2  # preflight, then a sync and a snapshot per mirror
     if job_type is JobType.SWITCH:
@@ -171,7 +173,9 @@ class JobRunner:
             await session.commit()
 
             try:
-                if job.type == JobType.UPDATE:
+                if job.type == JobType.CREATE:
+                    await self._create(session, job, mirror_set)
+                elif job.type == JobType.UPDATE:
                     await self._update(session, job, mirror_set)
                 elif job.type == JobType.SWITCH:
                     await self._switch(session, job, mirror_set)
@@ -250,6 +254,27 @@ class JobRunner:
             step.remaining_packages = 0
             await session.commit()
         return output
+
+    # --- create: register the mirrors in aptly, without downloading ---
+
+    async def _create(self, session: AsyncSession, job: Job, mirror_set: MirrorSet) -> None:
+        """Create one aptly mirror per suite and component.
+
+        aptly fetches and verifies the upstream Release while creating a mirror, so a
+        wrong keyring or archive URL fails here rather than hours into a sync.
+        """
+        existing = {mirror.name for mirror in await self._client.list_mirrors()}
+        for suite in order_suites(list(mirror_set.suites)):
+            for component in mirror_set.components:
+                spec = spec_for(mirror_set, suite, component)
+                step = await self._add_step(session, job, f"Create {spec.name}")
+                if spec.name in existing:
+                    await self._finish_step(
+                        session, step, StepState.SKIPPED, "already exists in aptly"
+                    )
+                    continue
+                await self._client.create_mirror(spec)
+                await self._finish_step(session, step, StepState.SUCCEEDED)
 
     # --- update: sync then snapshot, deliberately stopping before publish ---
 

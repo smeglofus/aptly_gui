@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -120,6 +120,68 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/sets", response_class=HTMLResponse)
     async def sets_index(request: Request) -> HTMLResponse:
         return await render(request, "sets.html", page="sets", sets=await _load_sets(request))
+
+    @app.get("/sets/new", response_class=HTMLResponse)
+    async def new_set_form(request: Request, error: str | None = None) -> HTMLResponse:
+        return await render(request, "set_new.html", page="sets", form=_blank_form(), error=error)
+
+    @app.post("/sets/new")
+    async def new_set_submit(
+        request: Request,
+        name: str = Form(...),
+        archive_url: str = Form(...),
+        suites: str = Form(...),
+        components: str = Form(...),
+        architectures: str = Form(...),
+        publish_prefix: str = Form(...),
+        keyrings: str = Form(""),
+        signing_key: str = Form(""),
+        filter: str = Form(""),
+    ) -> Response:
+        form = {
+            "name": name,
+            "archive_url": archive_url,
+            "suites": suites,
+            "components": components,
+            "architectures": architectures,
+            "publish_prefix": publish_prefix,
+            "keyrings": keyrings,
+            "signing_key": signing_key,
+            "filter": filter,
+        }
+        async with request.app.state.sessions() as session:
+            taken = (
+                await session.execute(select(MirrorSet).where(MirrorSet.name == name))
+            ).scalar_one_or_none()
+            if taken is not None:
+                return await render(
+                    request,
+                    "set_new.html",
+                    page="sets",
+                    form=form,
+                    error=i18n.gettext("A mirror set with this name already exists."),
+                )
+            mirror_set = MirrorSet(
+                name=name,
+                archive_url=archive_url,
+                suites=_split(suites),
+                components=_split(components),
+                architectures=_split(architectures),
+                keyrings=_split(keyrings),
+                filter=filter or None,
+                publish_prefix=publish_prefix,
+                signing_key=signing_key or None,
+                adopted=False,
+            )
+            session.add(mirror_set)
+            session.add(AuditEntry(action="set.create", target=name))
+            await session.commit()
+            await session.refresh(mirror_set)
+
+        job = await request.app.state.runner.enqueue(
+            JobType.CREATE, mirror_set.id, author="anonymous", params={}
+        )
+        return RedirectResponse(f"/jobs/{job.id}", status_code=303)
 
     @app.get("/sets/adopt", response_class=HTMLResponse)
     async def adopt_form(request: Request) -> HTMLResponse:
@@ -327,6 +389,20 @@ def _managed_map(sets: list[MirrorSet]) -> dict[str, str]:
     return {name: item.name for item in sets for name in item.expected_mirrors}
 
 
+def _blank_form() -> dict[str, str]:
+    return {
+        "name": "",
+        "archive_url": "",
+        "suites": "",
+        "components": "",
+        "architectures": "amd64",
+        "publish_prefix": "",
+        "keyrings": "",
+        "signing_key": "",
+        "filter": "",
+    }
+
+
 def _split(value: str) -> list[str]:
     return [part.strip() for part in value.replace("\n", ",").split(",") if part.strip()]
 
@@ -377,6 +453,7 @@ def _duration(seconds: float | None) -> str:
 
 def _job_type(value: str) -> str:
     return {
+        "create": i18n.gettext("create mirrors"),
         "update": i18n.gettext("sync and snapshot"),
         "switch": i18n.gettext("publish"),
         "cleanup": i18n.gettext("cleanup"),
