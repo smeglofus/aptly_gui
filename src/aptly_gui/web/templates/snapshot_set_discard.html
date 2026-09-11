@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}Discard snapshot set{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Discard snapshot set{% endtrans %}</h1>
+<p class="lead">{{ mirror_set.name }} · {{ snapshot_set.taken_at | age }}</p>
+
+{% if published %}
+  <div class="alert">
+    <strong>{% trans %}This set is published{% endtrans %}</strong>
+    <p>{% trans %}Clients are being served from it. Publish a different snapshot set first, then this one can be discarded.{% endtrans %}</p>
+  </div>
+  <p><a class="button" href="/sets/{{ mirror_set.id }}">{% trans %}Back to the mirror set{% endtrans %}</a></p>
+{% else %}
+  <div class="panel">
+    <p>{% trans count=names | length %}This deletes {{ count }} snapshot and then runs a database cleanup so the disk space actually comes back.{% pluralize %}This deletes {{ count }} snapshots and then runs a database cleanup so the disk space actually comes back.{% endtrans %}</p>
+    <details>
+      <summary>{% trans %}Which snapshots{% endtrans %}</summary>
+      <ul>{% for name in names %}<li><code>{{ name }}</code></li>{% endfor %}</ul>
+    </details>
+    <form method="post" action="/sets/{{ mirror_set.id }}/discard/{{ snapshot_set.id }}">
+      <p>
+        <button type="submit" class="danger">{% trans %}Discard the set{% endtrans %}</button>
+        <a class="button" href="/sets/{{ mirror_set.id }}">{% trans %}Cancel{% endtrans %}</a>
+      </p>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}

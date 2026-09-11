@@ -238,3 +238,56 @@ async def test_duplicate_set_name_is_refused_without_queueing_anything(app_clien
     assert second.status_code == 200
     assert "already exists" in second.text
     assert len(app.state.runner.calls) == 1
+
+
+async def test_snapshots_page_says_where_a_snapshot_belongs(app_client) -> None:
+    """Without context the screen is a list of names and a dead end."""
+    http, _ = await app_client()
+    async with http:
+        response = await http.get("/snapshots")
+    assert response.status_code == 200
+    assert "ubuntu-noble-noble-main-20260911T0800Z" in response.text
+    # It is published, so it is shown as in use rather than offered for deletion.
+    assert "published" in response.text
+
+
+async def test_published_snapshot_cannot_be_deleted(app_client) -> None:
+    http, app = await app_client()
+    async with http:
+        page = await http.get("/snapshots/discard?name=ubuntu-noble-noble-main-20260911T0800Z")
+        posted = await http.post(
+            "/snapshots/discard",
+            data={"name": "ubuntu-noble-noble-main-20260911T0800Z"},
+            follow_redirects=False,
+        )
+    assert "is published" in page.text
+    # Refused, and nothing was queued against aptly.
+    assert posted.status_code == 303
+    assert app.state.runner.calls == []
+
+
+async def test_orphan_snapshot_can_be_deleted(app_client) -> None:
+    state = _state(published=[])
+    cached = CachedState(state=state, stale=False, error=None)
+    http, app = await app_client(cached)
+    async with http:
+        page = await http.get("/snapshots/discard?name=ubuntu-noble-noble-main-20260911T0800Z")
+        posted = await http.post(
+            "/snapshots/discard",
+            data={"name": "ubuntu-noble-noble-main-20260911T0800Z"},
+            follow_redirects=False,
+        )
+    assert "Delete it" in page.text
+    assert posted.status_code == 303
+    assert [call[0] for call in app.state.runner.calls] == ["discard"]
+    assert app.state.runner.calls[0][2]["snapshots"] == ["ubuntu-noble-noble-main-20260911T0800Z"]
+
+
+async def test_deleting_an_unknown_snapshot_does_nothing(app_client) -> None:
+    http, app = await app_client()
+    async with http:
+        posted = await http.post(
+            "/snapshots/discard", data={"name": "does-not-exist"}, follow_redirects=False
+        )
+    assert posted.status_code == 303
+    assert app.state.runner.calls == []

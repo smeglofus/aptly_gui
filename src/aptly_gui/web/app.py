@@ -22,6 +22,7 @@ from ..db import (
     Job,
     JobType,
     MirrorSet,
+    SnapshotSet,
     SnapshotSetState,
     create_engine,
     create_session_factory,
@@ -109,7 +110,79 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/snapshots", response_class=HTMLResponse)
     async def snapshots(request: Request) -> HTMLResponse:
-        return await render(request, "snapshots.html", page="snapshots")
+        cached = await request.app.state.cache.get()
+        context = await _snapshot_context(request, cached.state)
+        return await render(request, "snapshots.html", page="snapshots", context=context)
+
+    @app.get("/snapshots/discard", response_class=HTMLResponse)
+    async def discard_confirm(request: Request, name: str) -> HTMLResponse:
+        cached = await request.app.state.cache.get()
+        context = await _snapshot_context(request, cached.state)
+        entry = context.get(name)
+        return await render(
+            request,
+            "snapshot_discard.html",
+            page="snapshots",
+            name=name,
+            entry=entry,
+            blocked=None if entry is None else entry.get("blocked"),
+        )
+
+    @app.post("/snapshots/discard")
+    async def discard_submit(request: Request, name: str = Form(...)) -> Response:
+        cached = await request.app.state.cache.get()
+        context = await _snapshot_context(request, cached.state)
+        entry = context.get(name)
+        if entry is None or entry.get("blocked"):
+            return RedirectResponse(f"/snapshots/discard?name={name}", status_code=303)
+        job = await request.app.state.runner.enqueue(
+            JobType.DISCARD,
+            entry.get("mirror_set_id"),
+            author="anonymous",
+            params={"snapshots": [name]},
+        )
+        return RedirectResponse(f"/jobs/{job.id}", status_code=303)
+
+    @app.get("/sets/{set_id}/discard/{snapshot_set_id}", response_class=HTMLResponse)
+    async def discard_set_confirm(
+        request: Request, set_id: int, snapshot_set_id: int
+    ) -> HTMLResponse:
+        async with request.app.state.sessions() as session:
+            snapshot_set = await session.get(SnapshotSet, snapshot_set_id)
+            mirror_set = await session.get(MirrorSet, set_id)
+        if snapshot_set is None or mirror_set is None:
+            return await render(request, "not_found.html", page="sets")
+        cached = await request.app.state.cache.get()
+        published = cached.state.published_snapshot_names
+        names = sorted(str(value) for value in snapshot_set.snapshots.values())
+        return await render(
+            request,
+            "snapshot_set_discard.html",
+            page="sets",
+            mirror_set=mirror_set,
+            snapshot_set=snapshot_set,
+            names=names,
+            published=[name for name in names if name in published],
+        )
+
+    @app.post("/sets/{set_id}/discard/{snapshot_set_id}")
+    async def discard_set_submit(request: Request, set_id: int, snapshot_set_id: int) -> Response:
+        async with request.app.state.sessions() as session:
+            snapshot_set = await session.get(SnapshotSet, snapshot_set_id)
+        if snapshot_set is None or snapshot_set.mirror_set_id != set_id:
+            return RedirectResponse(f"/sets/{set_id}", status_code=303)
+        cached = await request.app.state.cache.get()
+        published = cached.state.published_snapshot_names
+        names = sorted(str(value) for value in snapshot_set.snapshots.values())
+        if any(name in published for name in names):
+            return RedirectResponse(f"/sets/{set_id}/discard/{snapshot_set_id}", status_code=303)
+        job = await request.app.state.runner.enqueue(
+            JobType.DISCARD,
+            set_id,
+            author="anonymous",
+            params={"snapshots": names, "snapshot_set_id": snapshot_set_id},
+        )
+        return RedirectResponse(f"/jobs/{job.id}", status_code=303)
 
     @app.get("/publications", response_class=HTMLResponse)
     async def publications(request: Request) -> HTMLResponse:
@@ -398,6 +471,51 @@ async def _load_sets(request: Request) -> list[MirrorSet]:
     return list(rows)
 
 
+async def _snapshot_context(request: Request, state: Any) -> dict[str, dict[str, Any]]:
+    """Say, for each snapshot aptly holds, where it belongs and whether it can go.
+
+    Without this the snapshots screen is a dead end: a list of names with no way to
+    tell which set made them or why one cannot be deleted.
+    """
+    published = state.published_snapshot_names
+    where_published = {
+        source.name: f"{pub.prefix}/{pub.distribution}"
+        for pub in state.published
+        for source in pub.sources
+    }
+
+    sets = await _load_sets(request)
+    owner: dict[str, dict[str, Any]] = {}
+    for mirror_set in sets:
+        for snapshot_set in mirror_set.snapshot_sets:
+            for name in snapshot_set.snapshots.values():
+                owner[str(name)] = {
+                    "mirror_set_id": mirror_set.id,
+                    "mirror_set": mirror_set.name,
+                    "snapshot_set_id": snapshot_set.id,
+                    "taken_at": snapshot_set.taken_at,
+                }
+
+    context: dict[str, dict[str, Any]] = {}
+    for snapshot in state.snapshots:
+        entry: dict[str, Any] = {
+            "mirror_set_id": None,
+            "mirror_set": None,
+            "snapshot_set_id": None,
+            "taken_at": None,
+            "published_at": where_published.get(snapshot.name),
+            "blocked": None,
+        }
+        entry.update(owner.get(snapshot.name, {}))
+        if snapshot.name in published:
+            entry["blocked"] = "published"
+        elif entry["snapshot_set_id"] is not None:
+            # Removing one snapshot would leave its set unable to publish.
+            entry["blocked"] = "in_set"
+        context[snapshot.name] = entry
+    return context
+
+
 def _managed_map(sets: list[MirrorSet]) -> dict[str, str]:
     return {name: item.name for item in sets for name in item.expected_mirrors}
 
@@ -469,6 +587,7 @@ def _job_type(value: str) -> str:
         "create": i18n.gettext("create mirrors"),
         "update": i18n.gettext("sync and snapshot"),
         "switch": i18n.gettext("publish"),
+        "discard": i18n.gettext("discard snapshots"),
         "cleanup": i18n.gettext("cleanup"),
     }.get(value, value)
 

@@ -47,8 +47,10 @@ def order_suites(suites: list[str]) -> list[str]:
     return sorted(suites, key=rank)
 
 
-def _expected_steps(job_type: JobType, mirror_set: MirrorSet) -> int:
+def _expected_steps(job_type: JobType, mirror_set: MirrorSet | None) -> int:
     """How many steps the job will create, so the overall bar is honest from the start."""
+    if mirror_set is None:
+        return 1
     mirrors = len(mirror_set.suites) * len(mirror_set.components)
     if job_type is JobType.CREATE:
         return mirrors
@@ -57,6 +59,11 @@ def _expected_steps(job_type: JobType, mirror_set: MirrorSet) -> int:
     if job_type is JobType.SWITCH:
         return len(mirror_set.suites) + 1  # one publish per suite, then verify
     return 1
+
+
+def discard_steps(count: int) -> int:
+    # One delete per snapshot, then the cleanup that actually frees the disk.
+    return count + 1
 
 
 def spec_for(mirror_set: MirrorSet, suite: str, component: str) -> MirrorSpec:
@@ -127,7 +134,12 @@ class JobRunner:
     # --- queueing -------------------------------------------------------
 
     async def enqueue(
-        self, job_type: JobType, mirror_set_id: int, *, author: str, params: dict[str, object]
+        self,
+        job_type: JobType,
+        mirror_set_id: int | None,
+        *,
+        author: str,
+        params: dict[str, object],
     ) -> Job:
         async with self._sessions() as session:
             job = Job(
@@ -161,19 +173,32 @@ class JobRunner:
         self._next_position = 0
         async with self._sessions() as session:
             job = await session.get(Job, job_id)
-            if job is None or job.mirror_set_id is None:
+            if job is None:
                 return
-            mirror_set = await session.get(MirrorSet, job.mirror_set_id)
-            if mirror_set is None:
+            # Discarding snapshots that belong to no set has no mirror set to act on.
+            mirror_set = (
+                await session.get(MirrorSet, job.mirror_set_id)
+                if job.mirror_set_id is not None
+                else None
+            )
+            if mirror_set is None and job.type != JobType.DISCARD:
                 return
 
             job.state = JobState.RUNNING
             job.started_at = datetime.now(UTC)
-            job.expected_steps = _expected_steps(JobType(job.type), mirror_set)
+            job.expected_steps = (
+                discard_steps(len(job.params.get("snapshots", [])))
+                if job.type == JobType.DISCARD
+                else _expected_steps(JobType(job.type), mirror_set)
+            )
             await session.commit()
 
             try:
-                if job.type == JobType.CREATE:
+                if job.type == JobType.DISCARD:
+                    await self._discard(session, job)
+                elif mirror_set is None:
+                    raise ValueError("job has no mirror set")
+                elif job.type == JobType.CREATE:
                     await self._create(session, job, mirror_set)
                 elif job.type == JobType.UPDATE:
                     await self._update(session, job, mirror_set)
@@ -192,7 +217,7 @@ class JobRunner:
                     AuditEntry(
                         actor=job.author,
                         action=f"job.{job.type}",
-                        target=mirror_set.name,
+                        target=mirror_set.name if mirror_set else "snapshots",
                         result=job.state,
                         detail=job.error,
                     )
@@ -322,6 +347,39 @@ class JobRunner:
 
         snapshot_set.state = SnapshotSetState.COMPLETE
         await session.commit()
+
+    # --- discard: delete snapshots and actually reclaim the space ---
+
+    async def _discard(self, session: AsyncSession, job: Job) -> None:
+        """Drop the named snapshots, then compact.
+
+        Deleting a snapshot frees nothing on its own — the pool keeps the files until
+        a database cleanup runs — so the cleanup is part of the job rather than
+        something the operator has to remember.
+        """
+        names = [str(name) for name in job.params.get("snapshots", [])]
+        for name in names:
+            step = await self._add_step(session, job, f"Delete {name}")
+            try:
+                await self._client.delete_snapshot(name)
+            except AptlyError as exc:
+                await self._finish_step(session, step, StepState.FAILED, str(exc))
+                raise
+            await self._finish_step(session, step, StepState.SUCCEEDED)
+
+        step = await self._add_step(session, job, "Reclaim disk space")
+        task = await self._client.db_cleanup()
+        step.aptly_task_id = task.id
+        await session.commit()
+        output = await self._await_task(session, step, task.id)
+        await self._finish_step(session, step, StepState.SUCCEEDED, output)
+
+        set_id = job.params.get("snapshot_set_id")
+        if set_id is not None:
+            snapshot_set = await session.get(SnapshotSet, int(set_id))
+            if snapshot_set is not None:
+                await session.delete(snapshot_set)
+                await session.commit()
 
     # --- switch: point publications at a chosen snapshot set ---
 

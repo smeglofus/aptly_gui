@@ -3,7 +3,7 @@
 
 {% block content %}
 <h1>{% trans %}Snapshots{% endtrans %}</h1>
-<p class="lead">{% trans %}Deleting a snapshot frees no disk space on its own; the pool is only reclaimed by a database cleanup.{% endtrans %}</p>
+<p class="lead">{% trans %}Snapshots are published as a whole set, never one at a time — a publication combines the components, so publishing a single snapshot is what makes clients stop seeing them separately. The publish action therefore lives on the mirror set.{% endtrans %}</p>
 
 {% if s.snapshots %}
 <div class="scroll">
@@ -12,21 +12,41 @@
       <tr>
         <th>{% trans %}Name{% endtrans %}</th>
         <th>{% trans %}Created{% endtrans %}</th>
-        <th>{% trans %}Description{% endtrans %}</th>
+        <th>{% trans %}Mirror set{% endtrans %}</th>
         <th>{% trans %}State{% endtrans %}</th>
+        <th>{% trans %}Actions{% endtrans %}</th>
       </tr>
     </thead>
     <tbody>
       {% for snap in s.snapshots | sort(attribute='name') %}
+      {% set info = context.get(snap.name, {}) %}
       <tr>
         <th scope="row">{{ snap.name }}</th>
         <td>{{ snap.created_at | age }}</td>
-        <td class="wrap">{{ snap.description or '—' }}</td>
         <td>
-          {% if snap.name in s.published_snapshot_names %}
+          {% if info.mirror_set %}
+            <a href="/sets/{{ info.mirror_set_id }}">{{ info.mirror_set }}</a>
+          {% else %}
+            <span class="tag">{% trans %}unmanaged{% endtrans %}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if info.published_at %}
             <span class="tag tag-ok">{% trans %}published{% endtrans %}</span>
+            <code>{{ info.published_at }}</code>
+          {% elif info.snapshot_set_id %}
+            <span class="tag">{% trans %}ready to publish{% endtrans %}</span>
           {% else %}
             <span class="tag">{% trans %}unpublished{% endtrans %}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if info.blocked == 'published' %}
+            <span class="hint">{% trans %}in use{% endtrans %}</span>
+          {% elif info.blocked == 'in_set' %}
+            <a class="button" href="/sets/{{ info.mirror_set_id }}">{% trans %}Manage in set{% endtrans %}</a>
+          {% else %}
+            <a class="button danger" href="/snapshots/discard?name={{ snap.name }}">{% trans %}Delete{% endtrans %}</a>
           {% endif %}
         </td>
       </tr>
@@ -34,6 +54,7 @@
     </tbody>
   </table>
 </div>
+<p class="lead">{% trans %}Deleting a snapshot frees no disk space on its own; the pool is only reclaimed by a database cleanup, which runs as part of the delete.{% endtrans %}</p>
 {% else %}
   <p class="empty">{% trans %}No snapshots.{% endtrans %}</p>
 {% endif %}

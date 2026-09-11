@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{% trans %}Delete snapshot{% endtrans %} — aptly-gui{% endblock %}
+
+{% block content %}
+<h1>{% trans %}Delete snapshot{% endtrans %}</h1>
+
+{% if entry is none %}
+  <p class="empty">{% trans %}That snapshot no longer exists.{% endtrans %}</p>
+  <p><a class="button" href="/snapshots">{% trans %}Back to snapshots{% endtrans %}</a></p>
+{% elif blocked == 'published' %}
+  <div class="alert">
+    <strong>{% trans %}This snapshot is published{% endtrans %}</strong>
+    <p>{% trans where=entry.published_at %}Clients are being served from it at {{ where }}. Publish a different snapshot set first, then it can go.{% endtrans %}</p>
+  </div>
+  <p><a class="button" href="/snapshots">{% trans %}Back to snapshots{% endtrans %}</a></p>
+{% elif blocked == 'in_set' %}
+  <div class="notice">
+    {% trans name=entry.mirror_set %}This snapshot belongs to a snapshot set of {{ name }}. Removing it on its own would leave that set unable to publish, so discard the whole set from the mirror set screen instead.{% endtrans %}
+  </div>
+  <p>
+    <a class="button" href="/sets/{{ entry.mirror_set_id }}">{% trans %}Open the mirror set{% endtrans %}</a>
+    <a class="button" href="/snapshots">{% trans %}Back to snapshots{% endtrans %}</a>
+  </p>
+{% else %}
+  <div class="panel">
+    <p>{% trans %}This deletes the snapshot in aptly and then runs a database cleanup so the disk space actually comes back.{% endtrans %}</p>
+    <dl class="meta">
+      <dt>{% trans %}Snapshot{% endtrans %}</dt><dd><code>{{ name }}</code></dd>
+    </dl>
+    <form method="post" action="/snapshots/discard">
+      <input type="hidden" name="name" value="{{ name }}">
+      <button type="submit" class="danger">{% trans %}Delete it{% endtrans %}</button>
+      <a class="button" href="/snapshots">{% trans %}Cancel{% endtrans %}</a>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}
