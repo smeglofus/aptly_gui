@@ -5,7 +5,18 @@
 <h1>{% trans %}Snapshots{% endtrans %}</h1>
 <p class="lead">{% trans %}Snapshots are published as a whole set, never one at a time — a publication combines the components, so publishing a single snapshot is what makes clients stop seeing them separately. The publish action therefore lives on the mirror set.{% endtrans %}</p>
 
-{% if s.snapshots %}
+{% if state %}
+<div class="notice">
+  {% if state == 'unpublished' %}
+    {% trans shown=snapshots | length, total=total %}Showing {{ shown }} of {{ total }} snapshots that are not published.{% endtrans %}
+  {% else %}
+    {% trans shown=snapshots | length, total=total %}Showing {{ shown }} of {{ total }} snapshots that are published.{% endtrans %}
+  {% endif %}
+  <a href="/snapshots">{% trans %}Show all{% endtrans %}</a>
+</div>
+{% endif %}
+
+{% if snapshots %}
 <div class="scroll">
   <table>
     <thead>
@@ -18,7 +29,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for snap in s.snapshots | sort(attribute='name') %}
+      {% for snap in snapshots %}
       {% set info = context.get(snap.name, {}) %}
       <tr>
         <th scope="row">{{ snap.name }}</th>
@@ -55,6 +66,8 @@
   </table>
 </div>
 <p class="lead">{% trans %}Deleting a snapshot frees no disk space on its own; the pool is only reclaimed by a database cleanup, which runs as part of the delete.{% endtrans %}</p>
+{% elif state %}
+  <p class="empty">{% trans %}No snapshot matches this filter.{% endtrans %}</p>
 {% else %}
   <p class="empty">{% trans %}No snapshots.{% endtrans %}</p>
 {% endif %}

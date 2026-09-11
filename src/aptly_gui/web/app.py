@@ -202,10 +202,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.get("/snapshots", response_class=HTMLResponse)
-    async def snapshots(request: Request) -> HTMLResponse:
+    async def snapshots(request: Request, state: str | None = None) -> HTMLResponse:
         cached = await request.app.state.cache.get()
         context = await _snapshot_context(request, cached.state)
-        return await render(request, "snapshots.html", page="snapshots", context=context)
+        shown = sorted(cached.state.snapshots, key=lambda item: item.name)
+        if state == "unpublished":
+            published = cached.state.published_snapshot_names
+            shown = [item for item in shown if item.name not in published]
+        elif state == "published":
+            published = cached.state.published_snapshot_names
+            shown = [item for item in shown if item.name in published]
+        return await render(
+            request,
+            "snapshots.html",
+            page="snapshots",
+            context=context,
+            snapshots=shown,
+            total=len(cached.state.snapshots),
+            state=state if state in ("published", "unpublished") else None,
+        )
 
     @app.get("/snapshots/discard", response_class=HTMLResponse)
     async def discard_confirm(request: Request, name: str) -> HTMLResponse:

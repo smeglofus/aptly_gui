@@ -20,36 +20,36 @@
 {% endif %}
 
 <section class="cards">
-  <article class="card">
+  <a class="card" href="/sets">
     <span class="num">{{ sets | length }}</span>
     <span class="label">
       {% trans count=sets | length %}mirror set{% pluralize %}mirror sets{% endtrans %}
     </span>
-  </article>
-  <article class="card">
+  </a>
+  <a class="card" href="/mirrors">
     <span class="num">{{ s.mirrors | length }}</span>
     <span class="label">
       {% trans count=s.mirrors | length %}mirror{% pluralize %}mirrors{% endtrans %}
     </span>
-  </article>
-  <article class="card">
+  </a>
+  <a class="card" href="/snapshots">
     <span class="num">{{ s.snapshots | length }}</span>
     <span class="label">
       {% trans count=s.snapshots | length %}snapshot{% pluralize %}snapshots{% endtrans %}
     </span>
-  </article>
-  <article class="card">
+  </a>
+  <a class="card" href="/publications">
     <span class="num">{{ s.published | length }}</span>
     <span class="label">
       {% trans count=s.published | length %}publication{% pluralize %}publications{% endtrans %}
     </span>
-  </article>
-  <article class="card {{ 'warn' if s.unpublished_snapshots }}">
+  </a>
+  <a class="card {{ 'warn' if s.unpublished_snapshots }}" href="/snapshots?state=unpublished">
     <span class="num">{{ s.unpublished_snapshots | length }}</span>
     <span class="label">
       {% trans count=s.unpublished_snapshots | length %}unpublished snapshot{% pluralize %}unpublished snapshots{% endtrans %}
     </span>
-  </article>
+  </a>
 </section>
 
 {% if not sets and s.mirrors %}
