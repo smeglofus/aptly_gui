@@ -20,6 +20,9 @@ class Settings:
     secret_key: str = ""
     session_max_age: int = 14 * 24 * 3600
     secure_cookies: bool = False
+    # The one local account. Everyone else signs in through the provider.
+    admin_username: str = ""
+    admin_password: str = ""
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -36,4 +39,6 @@ class Settings:
             session_max_age=int(os.environ.get("APTLY_GUI_SESSION_MAX_AGE", cls.session_max_age)),
             secure_cookies=os.environ.get("APTLY_GUI_SECURE_COOKIES", "").lower()
             in ("1", "true", "yes"),
+            admin_username=os.environ.get("APTLY_GUI_ADMIN_USERNAME", cls.admin_username),
+            admin_password=os.environ.get("APTLY_GUI_ADMIN_PASSWORD", cls.admin_password),
         )

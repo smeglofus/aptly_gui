@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aptly-gui VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-11 14:12+0100\n"
+"POT-Creation-Date: 2026-09-11 14:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -38,7 +38,7 @@ msgstr "zbývá %(eta)s"
 msgid "%(free)s free of %(total)s"
 msgstr "volno %(free)s z %(total)s"
 
-#: src/aptly_gui/web/app.py:1000
+#: src/aptly_gui/web/app.py:989
 #, python-format
 msgid "%(n)d day ago"
 msgid_plural "%(n)d days ago"
@@ -46,7 +46,7 @@ msgstr[0] "před %(n)d dnem"
 msgstr[1] "před %(n)d dny"
 msgstr[2] "před %(n)d dny"
 
-#: src/aptly_gui/web/app.py:998
+#: src/aptly_gui/web/app.py:987
 #, python-format
 msgid "%(n)d hour ago"
 msgid_plural "%(n)d hours ago"
@@ -54,7 +54,7 @@ msgstr[0] "před %(n)d hodinou"
 msgstr[1] "před %(n)d hodinami"
 msgstr[2] "před %(n)d hodinami"
 
-#: src/aptly_gui/web/app.py:995
+#: src/aptly_gui/web/app.py:984
 #, python-format
 msgid "%(n)d min ago"
 msgid_plural "%(n)d min ago"
@@ -67,7 +67,7 @@ msgstr[2] "před %(n)d minutami"
 msgid "%(percent)s %% full"
 msgstr "zaplněno %(percent)s %%"
 
-#: src/aptly_gui/web/app.py:325
+#: src/aptly_gui/web/app.py:341
 msgid "A mirror set with this name already exists."
 msgstr "Sada mirrorů s tímhle názvem už existuje."
 
@@ -84,13 +84,9 @@ msgstr "Sada seskupuje mirrory, které dohromady tvoří jeden upstream. Aptly s
 msgid "Actions"
 msgstr "Akce"
 
-#: src/aptly_gui/web/templates/users.html:59
+#: src/aptly_gui/web/templates/users.html:69
 msgid "Activate"
 msgstr "Aktivovat"
-
-#: src/aptly_gui/web/templates/users.html:79
-msgid "Add a local account"
-msgstr "Přidat místní účet"
 
 #: src/aptly_gui/web/templates/adopt.html:2
 #: src/aptly_gui/web/templates/adopt.html:5
@@ -106,10 +102,6 @@ msgstr "Převzít tuto sadu"
 #: src/aptly_gui/web/templates/adopt.html:6
 msgid "Adoption only records that these mirrors belong together. Nothing in aptly is created, changed or deleted."
 msgstr "Převzetí jen zaznamená, že tyto mirrory patří k sobě. V aptly se nic nevytvoří, nezmění ani nesmaže."
-
-#: src/aptly_gui/web/templates/users.html:68
-msgid "Again"
-msgstr "Znovu"
 
 #: src/aptly_gui/web/templates/_status.html:8
 #, python-format
@@ -140,7 +132,6 @@ msgid "Archive URL"
 msgstr "URL archivu"
 
 #: src/aptly_gui/web/templates/setup.html:21
-#: src/aptly_gui/web/templates/users.html:89
 msgid "At least 10 characters."
 msgstr "Alespoň 10 znaků."
 
@@ -213,7 +204,6 @@ msgid "Could not create the set"
 msgstr "Sadu se nepodařilo založit"
 
 #: src/aptly_gui/web/templates/setup.html:27
-#: src/aptly_gui/web/templates/users.html:101
 msgid "Create the account"
 msgstr "Založit účet"
 
@@ -237,7 +227,7 @@ msgstr "Založí jeden aptly mirror pro každou kombinaci suite a komponenty. Za
 msgid "Database"
 msgstr "Databáze"
 
-#: src/aptly_gui/web/templates/users.html:56
+#: src/aptly_gui/web/templates/users.html:66
 msgid "Deactivate"
 msgstr "Deaktivovat"
 
@@ -325,6 +315,10 @@ msgstr "Volné místo na filesystému, kde leží aptly rootDir, ne kvóta vyhra
 msgid "Interface language"
 msgstr "Jazyk rozhraní"
 
+#: src/aptly_gui/web/templates/users.html:82
+msgid "Its username and password come from the environment and are re-applied every time the service starts, so they are changed by redeploying rather than from this screen. That keeps the only local credential out of the database and out of the image."
+msgstr "Jeho jméno a heslo pocházejí z proměnných prostředí a znovu se uplatní při každém startu služby, takže se mění nasazením, ne z téhle obrazovky. Jediné místní přihlašovací údaje tím zůstanou mimo databázi i mimo image."
+
 #: src/aptly_gui/web/templates/job_detail.html:2
 #: src/aptly_gui/web/templates/job_detail.html:5
 #, python-format
@@ -347,7 +341,7 @@ msgstr "ID klíče nebo e-mail použitý při publikování. Privátní klíč z
 msgid "Keyrings"
 msgstr "Keyringy"
 
-#: src/aptly_gui/web/templates/users.html:26
+#: src/aptly_gui/web/templates/users.html:28
 msgid "Last sign-in"
 msgstr "Poslední přihlášení"
 
@@ -411,9 +405,9 @@ msgstr "Název"
 msgid "New mirror set"
 msgstr "Nová sada mirrorů"
 
-#: src/aptly_gui/web/templates/users.html:67
-msgid "New password"
-msgstr "Nové heslo"
+#: src/aptly_gui/web/templates/users.html:9
+msgid "No identity provider is configured, so the local administrator is the only account that can sign in. See the README for the OIDC settings."
+msgstr "Není nastavený žádný poskytovatel identity, takže se může přihlásit jen místní správce. Nastavení OIDC najdeš v README."
 
 #: src/aptly_gui/web/templates/jobs.html:46
 #: src/aptly_gui/web/templates/set_detail.html:122
@@ -503,13 +497,11 @@ msgstr "Přehled"
 
 #: src/aptly_gui/web/templates/login.html:19
 #: src/aptly_gui/web/templates/setup.html:19
-#: src/aptly_gui/web/templates/users.html:28
-#: src/aptly_gui/web/templates/users.html:87
+#: src/aptly_gui/web/templates/users.html:86
 msgid "Password"
 msgstr "Heslo"
 
 #: src/aptly_gui/web/templates/setup.html:24
-#: src/aptly_gui/web/templates/users.html:92
 msgid "Password again"
 msgstr "Heslo znovu"
 
@@ -517,7 +509,7 @@ msgstr "Heslo znovu"
 msgid "Path on the aptly side, used to verify the upstream Release. Use the combined archive keyring; per-release ones often fail to verify."
 msgstr "Cesta na straně aptly, slouží k ověření upstream Release. Použij kombinovaný archivní keyring, ty per-release často neověří podpis."
 
-#: src/aptly_gui/web/app.py:495
+#: src/aptly_gui/web/app.py:511
 msgid "Pick a username."
 msgstr "Zadej uživatelské jméno."
 
@@ -575,18 +567,16 @@ msgstr "Načíst znovu"
 msgid "Reported by aptly for the filesystem holding its rootDir. A Docker volume has no quota of its own, so on a shared filesystem this number covers everything else stored there too."
 msgstr "Hlásí aptly pro filesystém, na kterém leží jeho rootDir. Docker volume nemá vlastní kvótu, takže na sdíleném filesystému se do čísla počítá i všechno ostatní."
 
-#: src/aptly_gui/web/templates/users.html:25
-#: src/aptly_gui/web/templates/users.html:96
+#: src/aptly_gui/web/templates/users.html:27
 msgid "Role"
 msgstr "Role"
 
 #: src/aptly_gui/web/templates/settings.html:24
-#: src/aptly_gui/web/templates/users.html:47
+#: src/aptly_gui/web/templates/users.html:53
 msgid "Save"
 msgstr "Uložit"
 
 #: src/aptly_gui/web/templates/sets.html:18
-#: src/aptly_gui/web/templates/users.html:69
 msgid "Set"
 msgstr "Sada"
 
@@ -660,7 +650,7 @@ msgstr "Snapshoty se publikují jako celá sada, nikdy po jednom — publikace k
 msgid "Some suite and component combinations have no mirror. You can still adopt, but an update will stop on the missing ones."
 msgstr "Některé kombinace suite a komponenty nemají mirror. Převzít to jde i tak, ale aktualizace se na chybějících zastaví."
 
-#: src/aptly_gui/web/templates/users.html:24
+#: src/aptly_gui/web/templates/users.html:26
 msgid "Source"
 msgstr "Zdroj"
 
@@ -678,7 +668,7 @@ msgstr "Spuštěno"
 #: src/aptly_gui/web/templates/set_detail.html:59
 #: src/aptly_gui/web/templates/set_detail.html:105
 #: src/aptly_gui/web/templates/snapshots.html:16
-#: src/aptly_gui/web/templates/users.html:27
+#: src/aptly_gui/web/templates/users.html:29
 msgid "State"
 msgstr "Stav"
 
@@ -703,13 +693,9 @@ msgstr "Synchronizovat a udělat snapshot"
 msgid "Taken"
 msgstr "Pořízeno"
 
-#: src/aptly_gui/web/app.py:633
+#: src/aptly_gui/web/app.py:649
 msgid "That account is deactivated."
 msgstr "Tenhle účet je deaktivovaný."
-
-#: src/aptly_gui/web/templates/users.html:13
-msgid "That account signs in through the identity provider, so it has no password here."
-msgstr "Tenhle účet se přihlašuje přes poskytovatele identity, takže tady žádné heslo nemá."
 
 #: src/aptly_gui/web/templates/not_found.html:6
 msgid "That item no longer exists."
@@ -719,23 +705,23 @@ msgstr "Tahle položka už neexistuje."
 msgid "That snapshot no longer exists."
 msgstr "Tenhle snapshot už neexistuje."
 
-#: src/aptly_gui/web/app.py:541
+#: src/aptly_gui/web/app.py:557
 msgid "That username and password do not match."
 msgstr "Tohle uživatelské jméno a heslo k sobě nepatří."
 
-#: src/aptly_gui/web/templates/users.html:12
-msgid "That username is already taken."
-msgstr "Tohle uživatelské jméno už je obsazené."
-
-#: src/aptly_gui/web/templates/users.html:11
+#: src/aptly_gui/web/templates/users.html:15
 msgid "That would leave nobody able to administer this instance."
 msgstr "Tím by tuhle instanci neměl kdo spravovat."
 
-#: src/aptly_gui/web/app.py:595
+#: src/aptly_gui/web/templates/users.html:80
+msgid "The local administrator"
+msgstr "Místní správce"
+
+#: src/aptly_gui/web/app.py:611
 msgid "The sign-in attempt could not be verified. Try again."
 msgstr "Pokus o přihlášení se nepodařilo ověřit. Zkus to znovu."
 
-#: src/aptly_gui/web/app.py:894
+#: src/aptly_gui/web/app.py:852
 msgid "The two passwords are not the same."
 msgstr "Hesla se neshodují."
 
@@ -746,6 +732,10 @@ msgstr "Zatím neexistuje žádný účet, takže nic není chráněné. Tenhle 
 #: src/aptly_gui/web/templates/base.html:46
 msgid "There is no authentication yet — keep this bound to loopback."
 msgstr "Autentizace zatím není, nech to navázané jen na loopback."
+
+#: src/aptly_gui/web/templates/users.html:6
+msgid "There is one local administrator, configured by environment variables. Everybody else signs in through the identity provider and appears here on their first visit."
+msgstr "Existuje jeden místní správce nastavený proměnnými prostředí. Všichni ostatní se přihlašují přes poskytovatele identity a objeví se tu při první návštěvě."
 
 #: src/aptly_gui/web/templates/settings.html:6
 msgid "These apply to the whole instance. Per-user preferences arrive with authentication."
@@ -821,7 +811,7 @@ msgstr "Nepřeložený text se zobrazí anglicky."
 msgid "Upstream"
 msgstr "Upstream"
 
-#: src/aptly_gui/web/app.py:896
+#: src/aptly_gui/web/app.py:854
 msgid "Use at least 10 characters."
 msgstr "Použij alespoň 10 znaků."
 
@@ -831,8 +821,8 @@ msgstr "Využito"
 
 #: src/aptly_gui/web/templates/login.html:15
 #: src/aptly_gui/web/templates/setup.html:15
-#: src/aptly_gui/web/templates/users.html:23
-#: src/aptly_gui/web/templates/users.html:83
+#: src/aptly_gui/web/templates/users.html:25
+#: src/aptly_gui/web/templates/users.html:84
 msgid "Username"
 msgstr "Uživatelské jméno"
 
@@ -841,10 +831,6 @@ msgstr "Uživatelské jméno"
 #: src/aptly_gui/web/templates/users.html:5
 msgid "Users"
 msgstr "Uživatelé"
-
-#: src/aptly_gui/web/templates/users.html:6
-msgid "Viewers read, operators run jobs, administrators also manage settings and accounts."
-msgstr "Divák čte, operátor spouští joby, správce navíc spravuje nastavení a účty."
 
 #: src/aptly_gui/web/templates/_job_progress.html:71
 msgid "Waiting for aptly to report progress…"
@@ -866,7 +852,7 @@ msgstr "Kterou publikaci tahle sada plní. Aptly to neví, takže to potvrď."
 msgid "Which snapshots"
 msgstr "Které snapshoty"
 
-#: src/aptly_gui/web/app.py:1052
+#: src/aptly_gui/web/app.py:1041
 msgid "administrator"
 msgstr "správce"
 
@@ -878,7 +864,7 @@ msgstr "Aptly si keyringy mezi aktualizacemi nepamatuje, proto se ukládají sem
 msgid "aptly-gui"
 msgstr "aptly-gui"
 
-#: src/aptly_gui/web/app.py:1037
+#: src/aptly_gui/web/app.py:1026
 msgid "cleanup"
 msgstr "úklid"
 
@@ -886,23 +872,27 @@ msgstr "úklid"
 msgid "complete"
 msgstr "kompletní"
 
-#: src/aptly_gui/web/app.py:1033
+#: src/aptly_gui/web/templates/users.html:38
+msgid "configured"
+msgstr "z konfigurace"
+
+#: src/aptly_gui/web/app.py:1022
 msgid "create mirrors"
 msgstr "založení mirrorů"
 
-#: src/aptly_gui/web/templates/users.html:58
+#: src/aptly_gui/web/templates/users.html:68
 msgid "deactivated"
 msgstr "deaktivovaný"
 
-#: src/aptly_gui/web/app.py:1036
+#: src/aptly_gui/web/app.py:1025
 msgid "discard snapshots"
 msgstr "zahození snapshotů"
 
-#: src/aptly_gui/web/app.py:1046
+#: src/aptly_gui/web/app.py:1035
 msgid "failed"
 msgstr "chyba"
 
-#: src/aptly_gui/web/templates/users.html:37
+#: src/aptly_gui/web/templates/users.html:40
 msgid "identity provider"
 msgstr "poskytovatel identity"
 
@@ -914,17 +904,21 @@ msgstr "používá se"
 msgid "incomplete"
 msgstr "nekompletní"
 
-#: src/aptly_gui/web/app.py:1047
+#: src/aptly_gui/web/app.py:1036
 msgid "interrupted"
 msgstr "přerušeno"
 
-#: src/aptly_gui/web/app.py:992
+#: src/aptly_gui/web/app.py:981
 msgid "just now"
 msgstr "před chvílí"
 
-#: src/aptly_gui/web/templates/users.html:36
+#: src/aptly_gui/web/templates/users.html:39
 msgid "local"
 msgstr "místní"
+
+#: src/aptly_gui/web/templates/users.html:60
+msgid "managed by configuration"
+msgstr "spravuje konfigurace"
 
 #: src/aptly_gui/web/templates/dashboard.html:32
 msgid "mirror"
@@ -950,7 +944,7 @@ msgstr "chybí"
 msgid "missing <code>%(name)s</code>"
 msgstr "chybí <code>%(name)s</code>"
 
-#: src/aptly_gui/web/app.py:989 src/aptly_gui/web/templates/dashboard.html:123
+#: src/aptly_gui/web/app.py:978 src/aptly_gui/web/templates/dashboard.html:123
 #: src/aptly_gui/web/templates/mirrors.html:39
 msgid "never"
 msgstr "nikdy"
@@ -959,11 +953,11 @@ msgstr "nikdy"
 msgid "ok"
 msgstr "ok"
 
-#: src/aptly_gui/web/app.py:1051
+#: src/aptly_gui/web/app.py:1040
 msgid "operator"
 msgstr "operátor"
 
-#: src/aptly_gui/web/app.py:1048
+#: src/aptly_gui/web/app.py:1037
 msgid "pending"
 msgstr "čeká"
 
@@ -978,7 +972,7 @@ msgstr[0] "publikace"
 msgstr[1] "publikace"
 msgstr[2] "publikací"
 
-#: src/aptly_gui/web/app.py:1035
+#: src/aptly_gui/web/app.py:1024
 msgid "publish"
 msgstr "publikace"
 
@@ -986,7 +980,7 @@ msgstr "publikace"
 msgid "published"
 msgstr "publikovaný"
 
-#: src/aptly_gui/web/app.py:1043
+#: src/aptly_gui/web/app.py:1032
 msgid "queued"
 msgstr "ve frontě"
 
@@ -994,11 +988,11 @@ msgstr "ve frontě"
 msgid "ready to publish"
 msgstr "připraven k publikaci"
 
-#: src/aptly_gui/web/app.py:1044
+#: src/aptly_gui/web/app.py:1033
 msgid "running"
 msgstr "běží"
 
-#: src/aptly_gui/web/app.py:1049
+#: src/aptly_gui/web/app.py:1038
 msgid "skipped"
 msgstr "přeskočeno"
 
@@ -1013,11 +1007,11 @@ msgstr[2] "snapshotů"
 msgid "snapshot missing"
 msgstr "snapshot chybí"
 
-#: src/aptly_gui/web/app.py:1045
+#: src/aptly_gui/web/app.py:1034
 msgid "succeeded"
 msgstr "úspěch"
 
-#: src/aptly_gui/web/app.py:1034
+#: src/aptly_gui/web/app.py:1023
 msgid "sync and snapshot"
 msgstr "sync a snapshot"
 
@@ -1037,7 +1031,7 @@ msgstr[0] "nepublikovaný snapshot"
 msgstr[1] "nepublikované snapshoty"
 msgstr[2] "nepublikovaných snapshotů"
 
-#: src/aptly_gui/web/app.py:1050
+#: src/aptly_gui/web/app.py:1039
 msgid "viewer"
 msgstr "divák"
 

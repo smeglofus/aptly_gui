@@ -89,6 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.oidc = (
             OidcClient(app.state.oidc_config) if app.state.oidc_config.enabled else None
         )
+        await _reconcile_admin(sessions, settings)
         app.state.has_users = await _any_user_exists(sessions)
         app.state.client = client
         app.state.sessions = sessions
@@ -692,39 +693,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             request, "users.html", page="users", users=list(rows), roles=list(UserRole), error=error
         )
 
-    @app.post("/users/create")
-    async def users_create(
-        request: Request,
-        username: str = Form(...),
-        password: str = Form(...),
-        password_again: str = Form(...),
-        role: str = Form(UserRole.VIEWER),
-    ) -> Response:
-        problem = _password_problem(password, password_again)
-        if problem or not username.strip():
-            return RedirectResponse(f"/users?error={quote(problem or 'name')}", status_code=303)
-        async with request.app.state.sessions() as session:
-            taken = (
-                await session.execute(select(User).where(User.username == username.strip()))
-            ).scalar_one_or_none()
-            if taken is not None:
-                return RedirectResponse("/users?error=taken", status_code=303)
-            session.add(
-                User(
-                    username=username.strip(),
-                    password_hash=hash_password(password),
-                    role=_valid_role(role),
-                    source="local",
-                )
-            )
-            session.add(
-                AuditEntry(
-                    actor=request.state.user.username, action="user.create", target=username.strip()
-                )
-            )
-            await session.commit()
-        return RedirectResponse("/users", status_code=303)
-
     @app.post("/users/{user_id}/role")
     async def users_role(request: Request, user_id: int, role: str = Form(...)) -> Response:
         async with request.app.state.sessions() as session:
@@ -761,31 +729,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     action="user.active",
                     target=user.username,
                     result="active" if wanted else "inactive",
-                )
-            )
-            await session.commit()
-        return RedirectResponse("/users", status_code=303)
-
-    @app.post("/users/{user_id}/password")
-    async def users_password(
-        request: Request,
-        user_id: int,
-        password: str = Form(...),
-        password_again: str = Form(...),
-    ) -> Response:
-        problem = _password_problem(password, password_again)
-        if problem:
-            return RedirectResponse(f"/users?error={quote(problem)}", status_code=303)
-        async with request.app.state.sessions() as session:
-            user = await session.get(User, user_id)
-            if user is None or not user.is_local:
-                return RedirectResponse("/users?error=not_local", status_code=303)
-            user.password_hash = hash_password(password)
-            session.add(
-                AuditEntry(
-                    actor=request.state.user.username,
-                    action="user.password",
-                    target=user.username,
                 )
             )
             await session.commit()
@@ -931,6 +874,36 @@ async def _check_csrf(request: Request) -> None:
     submitted = form.get("csrf_token")
     if not csrf_matches(getattr(request.state, "csrf", None), str(submitted or "")):
         raise HTTPException(status_code=400, detail="csrf")
+
+
+async def _reconcile_admin(sessions: Any, settings: Settings) -> None:
+    """Keep the one local account in step with the configuration.
+
+    Its password lives in the environment rather than the database so it can be
+    rotated by redeploying, and so no local credential is ever baked into the image.
+    """
+    if not settings.admin_username or not settings.admin_password:
+        return
+    async with sessions() as session:
+        user = (
+            await session.execute(select(User).where(User.username == settings.admin_username))
+        ).scalar_one_or_none()
+        if user is None:
+            session.add(
+                User(
+                    username=settings.admin_username,
+                    password_hash=hash_password(settings.admin_password),
+                    role=UserRole.ADMIN,
+                    source="local",
+                )
+            )
+        else:
+            # Configuration wins, including over a role someone changed by hand.
+            user.password_hash = hash_password(settings.admin_password)
+            user.role = UserRole.ADMIN
+            user.active = True
+            user.source = "local"
+        await session.commit()
 
 
 async def _any_user_exists(sessions: Any) -> bool:

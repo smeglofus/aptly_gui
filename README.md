@@ -70,9 +70,23 @@ Only one write job runs at a time, because aptly has a single database.
 
 ## Signing in
 
-The first visit asks for an administrator account; nothing else is reachable until one
-exists. Roles are **viewer** (read), **operator** (run jobs) and **admin** (also settings
-and accounts). Administration is admin-only to read as well as to change.
+There is **one local account**, an administrator, configured by environment variables and
+re-applied every time the service starts. Everybody else signs in through OIDC and appears
+in the user list on their first visit.
+
+| Variable | Meaning |
+|---|---|
+| `APTLY_GUI_ADMIN_USERNAME` | The local administrator's username |
+| `APTLY_GUI_ADMIN_PASSWORD` | Its password; rotate it by redeploying |
+
+Keeping it in the environment means no local credential is written into the image or
+committed anywhere, and the running instance cannot drift from what you configured — a role
+or password changed by hand is reset on the next start.
+
+If neither is set and no account exists, the first visit offers to create one instead.
+
+Roles are **viewer** (read), **operator** (run jobs) and **admin** (also settings and
+accounts). Administration is admin-only to read as well as to change.
 
 ### OIDC
 

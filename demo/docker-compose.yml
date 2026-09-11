@@ -16,11 +16,14 @@ services:
     build:
       context: ..
     image: aptly-gui/aptly-gui:dev
-    # Loopback only: there is no authentication yet.
+    # Loopback only: these are demo credentials over plain HTTP.
     ports:
       - "127.0.0.1:${APTLY_GUI_PORT:-8078}:8080"
     environment:
       APTLY_API_URL: http://aptly:8080
+      # Demo credentials. Set real ones, or configure OIDC, before exposing this.
+      APTLY_GUI_ADMIN_USERNAME: admin
+      APTLY_GUI_ADMIN_PASSWORD: heslo123
     volumes:
       - gui-data:/data
     depends_on:

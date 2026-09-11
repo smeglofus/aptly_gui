@@ -3,14 +3,16 @@
 
 {% block content %}
 <h1>{% trans %}Users{% endtrans %}</h1>
-<p class="lead">{% trans %}Viewers read, operators run jobs, administrators also manage settings and accounts.{% endtrans %}</p>
+<p class="lead">{% trans %}There is one local administrator, configured by environment variables. Everybody else signs in through the identity provider and appears here on their first visit.{% endtrans %}</p>
+
+{% if not oidc_enabled %}
+<div class="notice">{% trans %}No identity provider is configured, so the local administrator is the only account that can sign in. See the README for the OIDC settings.{% endtrans %}</div>
+{% endif %}
 
 {% if error %}
 <div class="alert">
   <p>
     {% if error == 'last_admin' %}{% trans %}That would leave nobody able to administer this instance.{% endtrans %}
-    {% elif error == 'taken' %}{% trans %}That username is already taken.{% endtrans %}
-    {% elif error == 'not_local' %}{% trans %}That account signs in through the identity provider, so it has no password here.{% endtrans %}
     {% else %}{{ error }}{% endif %}
   </p>
 </div>
@@ -25,18 +27,22 @@
         <th>{% trans %}Role{% endtrans %}</th>
         <th>{% trans %}Last sign-in{% endtrans %}</th>
         <th>{% trans %}State{% endtrans %}</th>
-        <th>{% trans %}Password{% endtrans %}</th>
       </tr>
     </thead>
     <tbody>
       {% for item in users %}
+      {% set configured = item.is_local and item.username == admin_username %}
       <tr>
         <th scope="row">{{ item.username }}</th>
         <td>
-          {% if item.is_local %}<span class="tag">{% trans %}local{% endtrans %}</span>
+          {% if configured %}<span class="tag">{% trans %}configured{% endtrans %}</span>
+          {% elif item.is_local %}<span class="tag">{% trans %}local{% endtrans %}</span>
           {% else %}<span class="tag tag-ok">{% trans %}identity provider{% endtrans %}</span>{% endif %}
         </td>
         <td>
+          {% if configured %}
+            {{ item.role | job_state }}
+          {% else %}
           <form method="post" action="/users/{{ item.id }}/role">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <select name="role" onchange="this.form.submit()">
@@ -46,9 +52,13 @@
             </select>
             <noscript><button type="submit">{% trans %}Save{% endtrans %}</button></noscript>
           </form>
+          {% endif %}
         </td>
         <td>{{ item.last_login | age }}</td>
         <td>
+          {% if configured %}
+            <span class="hint">{% trans %}managed by configuration{% endtrans %}</span>
+          {% else %}
           <form method="post" action="/users/{{ item.id }}/active">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="active" value="{{ '0' if item.active else '1' }}">
@@ -59,16 +69,7 @@
               <button type="submit">{% trans %}Activate{% endtrans %}</button>
             {% endif %}
           </form>
-        </td>
-        <td>
-          {% if item.is_local %}
-          <form method="post" action="/users/{{ item.id }}/password">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="password" name="password" placeholder="{% trans %}New password{% endtrans %}" required>
-            <input type="password" name="password_again" placeholder="{% trans %}Again{% endtrans %}" required>
-            <button type="submit">{% trans %}Set{% endtrans %}</button>
-          </form>
-          {% else %}—{% endif %}
+          {% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -76,28 +77,14 @@
   </table>
 </div>
 
-<h2>{% trans %}Add a local account{% endtrans %}</h2>
-<form method="post" action="/users/create" class="panel">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-  <div class="field">
-    <label for="new-username">{% trans %}Username{% endtrans %}</label>
-    <input type="text" id="new-username" name="username" required>
-  </div>
-  <div class="field">
-    <label for="new-password">{% trans %}Password{% endtrans %}</label>
-    <input type="password" id="new-password" name="password" autocomplete="new-password" required>
-    <p class="hint">{% trans %}At least 10 characters.{% endtrans %}</p>
-  </div>
-  <div class="field">
-    <label for="new-password-again">{% trans %}Password again{% endtrans %}</label>
-    <input type="password" id="new-password-again" name="password_again" autocomplete="new-password" required>
-  </div>
-  <div class="field">
-    <label for="new-role">{% trans %}Role{% endtrans %}</label>
-    <select name="role" id="new-role">
-      {% for role in roles %}<option value="{{ role }}">{{ role | job_state }}</option>{% endfor %}
-    </select>
-  </div>
-  <button type="submit" class="primary">{% trans %}Create the account{% endtrans %}</button>
-</form>
+<h2>{% trans %}The local administrator{% endtrans %}</h2>
+<div class="panel">
+  <p>{% trans %}Its username and password come from the environment and are re-applied every time the service starts, so they are changed by redeploying rather than from this screen. That keeps the only local credential out of the database and out of the image.{% endtrans %}</p>
+  <dl class="meta">
+    <dt>{% trans %}Username{% endtrans %}</dt>
+    <dd><code>APTLY_GUI_ADMIN_USERNAME</code></dd>
+    <dt>{% trans %}Password{% endtrans %}</dt>
+    <dd><code>APTLY_GUI_ADMIN_PASSWORD</code></dd>
+  </dl>
+</div>
 {% endblock %}
