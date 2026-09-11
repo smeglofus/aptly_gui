@@ -12,6 +12,7 @@
     <dl class="meta">
       <dt>{% trans %}Upstream{% endtrans %}</dt><dd><code>{{ p.archive_url }}</code></dd>
       <dt>{% trans %}Mirrors{% endtrans %}</dt><dd>{{ p.mirrors | length }}</dd>
+      <dt>{% trans %}Naming{% endtrans %}</dt><dd><code>{{ p.pattern }}</code></dd>
     </dl>
 
     {% if not p.complete %}
@@ -33,12 +34,25 @@
       <input type="hidden" name="components" value="{{ p.components | join(',') }}">
       <input type="hidden" name="architectures" value="{{ p.architectures | join(',') }}">
       <input type="hidden" name="filter" value="{{ p.filter or '' }}">
+      <input type="hidden" name="mirror_pattern" value="{{ p.pattern }}">
 
       <div class="field">
         <label for="prefix-{{ loop.index }}">{% trans %}Publish prefix{% endtrans %}</label>
         <input type="text" id="prefix-{{ loop.index }}" name="publish_prefix"
                value="{{ p.publish_prefix or '' }}" required>
         <p class="hint">{% trans %}Which publication this set feeds. aptly cannot tell us, so confirm it.{% endtrans %}</p>
+      </div>
+
+      <div class="field">
+        <label for="endpoint-{{ loop.index }}">{% trans %}Publish endpoint{% endtrans %}</label>
+        <input type="text" id="endpoint-{{ loop.index }}" name="publish_endpoint" value="" placeholder="prod">
+        <p class="hint">{% trans %}A named filesystem endpoint from aptly's config, if this publication uses one. Leave empty for the default.{% endtrans %}</p>
+      </div>
+
+      <div class="field">
+        <label for="public-{{ loop.index }}">{% trans %}Public URL{% endtrans %}</label>
+        <input type="text" id="public-{{ loop.index }}" name="public_url" size="60" value="" placeholder="http://mirror.example.com/ubuntu">
+        <p class="hint">{% trans %}Where clients reach this publication, so publishing can check what they actually get.{% endtrans %}</p>
       </div>
 
       <div class="field">

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aptly-gui VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-11 14:46+0100\n"
+"POT-Creation-Date: 2026-09-11 15:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -38,7 +38,7 @@ msgstr "zbývá %(eta)s"
 msgid "%(free)s free of %(total)s"
 msgstr "volno %(free)s z %(total)s"
 
-#: src/aptly_gui/web/app.py:1003
+#: src/aptly_gui/web/app.py:1040
 #, python-format
 msgid "%(n)d day ago"
 msgid_plural "%(n)d days ago"
@@ -46,7 +46,7 @@ msgstr[0] "před %(n)d dnem"
 msgstr[1] "před %(n)d dny"
 msgstr[2] "před %(n)d dny"
 
-#: src/aptly_gui/web/app.py:1001
+#: src/aptly_gui/web/app.py:1038
 #, python-format
 msgid "%(n)d hour ago"
 msgid_plural "%(n)d hours ago"
@@ -54,7 +54,7 @@ msgstr[0] "před %(n)d hodinou"
 msgstr[1] "před %(n)d hodinami"
 msgstr[2] "před %(n)d hodinami"
 
-#: src/aptly_gui/web/app.py:998
+#: src/aptly_gui/web/app.py:1035
 #, python-format
 msgid "%(n)d min ago"
 msgid_plural "%(n)d min ago"
@@ -67,9 +67,17 @@ msgstr[2] "před %(n)d minutami"
 msgid "%(percent)s %% full"
 msgstr "zaplněno %(percent)s %%"
 
-#: src/aptly_gui/web/app.py:356
+#: src/aptly_gui/web/app.py:377
 msgid "A mirror set with this name already exists."
 msgstr "Sada mirrorů s tímhle názvem už existuje."
+
+#: src/aptly_gui/web/templates/adopt.html:49
+msgid "A named filesystem endpoint from aptly's config, if this publication uses one. Leave empty for the default."
+msgstr "Pojmenovaný filesystem endpoint z konfigurace aptly, pokud tahle publikace nějaký používá. Prázdné znamená výchozí."
+
+#: src/aptly_gui/web/templates/set_new.html:85
+msgid "A named filesystem endpoint from aptly's config. Leave empty for the default one."
+msgstr "Pojmenovaný filesystem endpoint z konfigurace aptly. Prázdné znamená výchozí."
 
 #: src/aptly_gui/web/templates/dashboard.html:10
 msgid "A publication points at a snapshot that no longer exists in aptly. Such a repository cannot be switched or rolled back until this is resolved."
@@ -95,7 +103,7 @@ msgstr "Aktivovat"
 msgid "Adopt existing mirrors"
 msgstr "Převzít existující mirrory"
 
-#: src/aptly_gui/web/templates/adopt.html:62
+#: src/aptly_gui/web/templates/adopt.html:76
 msgid "Adopt this set"
 msgstr "Převzít tuto sadu"
 
@@ -184,7 +192,7 @@ msgstr "Oddělené čárkou. Z každé suite vznikne samostatná publikace."
 msgid "Component"
 msgstr "Komponenta"
 
-#: src/aptly_gui/web/templates/adopt.html:79
+#: src/aptly_gui/web/templates/adopt.html:93
 #: src/aptly_gui/web/templates/mirrors.html:17
 #: src/aptly_gui/web/templates/set_new.html:51
 #: src/aptly_gui/web/templates/sets.html:21
@@ -211,7 +219,7 @@ msgstr "Založit účet"
 msgid "Create the first administrator"
 msgstr "Založení prvního správce"
 
-#: src/aptly_gui/web/templates/set_new.html:87
+#: src/aptly_gui/web/templates/set_new.html:109
 msgid "Create the mirrors"
 msgstr "Založit mirrory"
 
@@ -252,7 +260,7 @@ msgstr "Smazání snapshotu"
 msgid "Deleting a snapshot frees no disk space on its own; the pool is only reclaimed by a database cleanup, which runs as part of the delete."
 msgstr "Smazání snapshotu samo o sobě neuvolní místo, pool se vrátí až úklidem databáze, který proběhne jako součást mazání."
 
-#: src/aptly_gui/web/templates/set_detail.html:85
+#: src/aptly_gui/web/templates/set_detail.html:87
 msgid "Discard"
 msgstr "Zahodit"
 
@@ -269,7 +277,7 @@ msgstr "Zahodit sadu"
 msgid "Disk space"
 msgstr "Místo na disku"
 
-#: src/aptly_gui/web/templates/adopt.html:78
+#: src/aptly_gui/web/templates/adopt.html:92
 #: src/aptly_gui/web/templates/dashboard.html:108
 #: src/aptly_gui/web/templates/mirrors.html:16
 #: src/aptly_gui/web/templates/publications.html:14
@@ -294,7 +302,7 @@ msgstr "Vyplní formulář níže. Všechno jde pak přepsat."
 
 #: src/aptly_gui/web/templates/dashboard.html:109
 #: src/aptly_gui/web/templates/mirrors.html:19
-#: src/aptly_gui/web/templates/set_detail.html:10
+#: src/aptly_gui/web/templates/set_detail.html:12
 #: src/aptly_gui/web/templates/set_new.html:71
 msgid "Filter"
 msgstr "Filtr"
@@ -310,6 +318,10 @@ msgstr "Volno"
 #: src/aptly_gui/web/templates/_status.html:11
 msgid "Free space on the filesystem holding aptly's rootDir, not a quota for aptly itself"
 msgstr "Volné místo na filesystému, kde leží aptly rootDir, ne kvóta vyhrazená aptly"
+
+#: src/aptly_gui/web/templates/set_new.html:100
+msgid "How this set's mirrors are named in aptly. The set prefix is worth having when one aptly holds several upstreams, and redundant when the suite already identifies the release."
+msgstr "Jak se mirrory téhle sady jmenují v aptly. Prefix sady se hodí, když jedno aptly drží několik upstreamů, a je zbytečný, když release určuje už samotná suite."
 
 #: src/aptly_gui/web/templates/settings.html:15
 msgid "Interface language"
@@ -331,12 +343,12 @@ msgstr "Job %(id)s"
 msgid "Jobs"
 msgstr "Joby"
 
-#: src/aptly_gui/web/templates/adopt.html:54
-#: src/aptly_gui/web/templates/set_new.html:84
+#: src/aptly_gui/web/templates/adopt.html:68
+#: src/aptly_gui/web/templates/set_new.html:106
 msgid "Key id or e-mail used when publishing. The private key stays on the aptly side."
 msgstr "ID klíče nebo e-mail použitý při publikování. Privátní klíč zůstává na straně aptly."
 
-#: src/aptly_gui/web/templates/adopt.html:45
+#: src/aptly_gui/web/templates/adopt.html:59
 #: src/aptly_gui/web/templates/set_new.html:64
 msgid "Keyrings"
 msgstr "Keyringy"
@@ -358,7 +370,7 @@ msgstr "Spravovat v sadě"
 msgid "Managed"
 msgstr "Spravovaný"
 
-#: src/aptly_gui/web/templates/adopt.html:77
+#: src/aptly_gui/web/templates/adopt.html:91
 #: src/aptly_gui/web/templates/dashboard.html:107
 msgid "Mirror"
 msgstr "Mirror"
@@ -366,6 +378,10 @@ msgstr "Mirror"
 #: src/aptly_gui/web/templates/dashboard.html:101
 msgid "Mirror freshness"
 msgstr "Stáří mirrorů"
+
+#: src/aptly_gui/web/templates/set_new.html:95
+msgid "Mirror naming"
+msgstr "Pojmenování mirrorů"
 
 #: src/aptly_gui/web/templates/jobs.html:15
 #: src/aptly_gui/web/templates/snapshots.html:26
@@ -382,7 +398,7 @@ msgstr "Sady mirrorů"
 #: src/aptly_gui/web/templates/base.html:16
 #: src/aptly_gui/web/templates/mirrors.html:2
 #: src/aptly_gui/web/templates/mirrors.html:5
-#: src/aptly_gui/web/templates/set_detail.html:23
+#: src/aptly_gui/web/templates/set_detail.html:25
 msgid "Mirrors"
 msgstr "Mirrory"
 
@@ -390,7 +406,7 @@ msgstr "Mirrory"
 msgid "Mirrors are named set-suite-component, so a set called ubuntu-noble with suite noble and component main becomes ubuntu-noble-noble-main."
 msgstr "Mirrory se jmenují sada-suite-komponenta, takže ze sady ubuntu-noble se suite noble a komponentou main vznikne ubuntu-noble-noble-main."
 
-#: src/aptly_gui/web/templates/adopt.html:58
+#: src/aptly_gui/web/templates/adopt.html:72
 msgid "Mirrors in this set"
 msgstr "Mirrory v této sadě"
 
@@ -398,6 +414,11 @@ msgstr "Mirrory v této sadě"
 #: src/aptly_gui/web/templates/snapshots.html:24
 msgid "Name"
 msgstr "Název"
+
+#: src/aptly_gui/web/templates/adopt.html:15
+#: src/aptly_gui/web/templates/set_detail.html:10
+msgid "Naming"
+msgstr "Pojmenování"
 
 #: src/aptly_gui/web/templates/set_new.html:2
 #: src/aptly_gui/web/templates/set_new.html:5
@@ -410,7 +431,7 @@ msgid "No identity provider is configured, so the local administrator is the onl
 msgstr "Není nastavený žádný poskytovatel identity, takže se může přihlásit jen místní správce. Nastavení OIDC najdeš v README."
 
 #: src/aptly_gui/web/templates/jobs.html:46
-#: src/aptly_gui/web/templates/set_detail.html:122
+#: src/aptly_gui/web/templates/set_detail.html:124
 msgid "No jobs yet."
 msgstr "Zatím žádné joby."
 
@@ -427,7 +448,7 @@ msgstr "Žádné mirrory."
 msgid "No snapshot matches this filter."
 msgstr "Tomuhle filtru neodpovídá žádný snapshot."
 
-#: src/aptly_gui/web/templates/set_detail.html:94
+#: src/aptly_gui/web/templates/set_detail.html:96
 msgid "No snapshot sets yet. Run a sync to create one."
 msgstr "Zatím žádné sady snapshotů. Vytvoříš ji spuštěním synchronizace."
 
@@ -435,7 +456,7 @@ msgstr "Zatím žádné sady snapshotů. Vytvoříš ji spuštěním synchroniza
 msgid "No snapshots."
 msgstr "Žádné snapshoty."
 
-#: src/aptly_gui/web/templates/adopt.html:67
+#: src/aptly_gui/web/templates/adopt.html:81
 msgid "No unmanaged mirrors follow the set-suite-component naming convention."
 msgstr "Žádný nespravovaný mirror neodpovídá konvenci sada-suite-komponenta."
 
@@ -453,11 +474,11 @@ msgstr "Nepovoleno"
 msgid "Not found"
 msgstr "Nenalezeno"
 
-#: src/aptly_gui/web/templates/adopt.html:71
+#: src/aptly_gui/web/templates/adopt.html:85
 msgid "Not grouped"
 msgstr "Neseskupené"
 
-#: src/aptly_gui/web/templates/set_detail.html:20
+#: src/aptly_gui/web/templates/set_detail.html:22
 msgid "Nothing has been snapshotted yet, so there is nothing to publish. Run a sync first and a Publish button will appear against the snapshot set it creates."
 msgstr "Zatím není žádný snapshot, takže není co publikovat. Spusť synchronizaci a u vzniklé sady snapshotů se objeví tlačítko Publikovat."
 
@@ -513,7 +534,7 @@ msgstr "Heslo znovu"
 msgid "Path on the aptly side, used to verify the upstream Release. Use the combined archive keyring; per-release ones often fail to verify."
 msgstr "Cesta na straně aptly, slouží k ověření upstream Release. Použij kombinovaný archivní keyring, ty per-release často neověří podpis."
 
-#: src/aptly_gui/web/app.py:526
+#: src/aptly_gui/web/app.py:556
 msgid "Pick a username."
 msgstr "Zadej uživatelské jméno."
 
@@ -529,28 +550,42 @@ msgstr "Prefix / distribuce"
 msgid "Progress"
 msgstr "Průběh"
 
+#: src/aptly_gui/web/templates/adopt.html:53
+#: src/aptly_gui/web/templates/set_detail.html:9
+#: src/aptly_gui/web/templates/set_new.html:89
+msgid "Public URL"
+msgstr "Veřejná URL"
+
 #: src/aptly_gui/web/templates/base.html:18
 #: src/aptly_gui/web/templates/publications.html:2
 #: src/aptly_gui/web/templates/publications.html:5
 msgid "Publications"
 msgstr "Publikace"
 
-#: src/aptly_gui/web/templates/set_detail.html:61
+#: src/aptly_gui/web/templates/set_detail.html:63
 msgid "Publish"
 msgstr "Publikovat"
 
-#: src/aptly_gui/web/templates/adopt.html:38
-#: src/aptly_gui/web/templates/set_detail.html:8
+#: src/aptly_gui/web/templates/adopt.html:47
+#: src/aptly_gui/web/templates/set_new.html:83
+msgid "Publish endpoint"
+msgstr "Publish endpoint"
+
+#: src/aptly_gui/web/templates/adopt.html:40
 #: src/aptly_gui/web/templates/set_new.html:77
 #: src/aptly_gui/web/templates/sets.html:22
 msgid "Publish prefix"
 msgstr "Prefix publikace"
 
-#: src/aptly_gui/web/templates/set_detail.html:81
+#: src/aptly_gui/web/templates/set_detail.html:8
+msgid "Publish target"
+msgstr "Cíl publikace"
+
+#: src/aptly_gui/web/templates/set_detail.html:83
 msgid "Publish this set"
 msgstr "Publikovat tuto sadu"
 
-#: src/aptly_gui/web/templates/set_detail.html:92
+#: src/aptly_gui/web/templates/set_detail.html:94
 msgid "Publishing an older set is a rollback: aptly snapshots are immutable, so it only changes which index clients see."
 msgstr "Publikování starší sady je rollback: snapshoty v aptly jsou neměnné, takže se jen změní, který index klienti vidí."
 
@@ -559,7 +594,7 @@ msgstr "Publikování starší sady je rollback: snapshoty v aptly jsou neměnn�
 msgid "Read %(age)s"
 msgstr "Načteno %(age)s"
 
-#: src/aptly_gui/web/templates/set_detail.html:97
+#: src/aptly_gui/web/templates/set_detail.html:99
 msgid "Recent jobs"
 msgstr "Poslední joby"
 
@@ -636,9 +671,9 @@ msgstr "Přihlásit přes poskytovatele identity"
 msgid "Sign out"
 msgstr "Odhlásit"
 
-#: src/aptly_gui/web/templates/adopt.html:52
-#: src/aptly_gui/web/templates/set_detail.html:9
-#: src/aptly_gui/web/templates/set_new.html:82
+#: src/aptly_gui/web/templates/adopt.html:66
+#: src/aptly_gui/web/templates/set_detail.html:11
+#: src/aptly_gui/web/templates/set_new.html:104
 msgid "Signing key"
 msgstr "Podpisový klíč"
 
@@ -648,13 +683,13 @@ msgstr "Podpisový klíč"
 msgid "Snapshot"
 msgstr "Snapshot"
 
-#: src/aptly_gui/web/templates/set_detail.html:52
+#: src/aptly_gui/web/templates/set_detail.html:54
 #: src/aptly_gui/web/templates/sets.html:23
 msgid "Snapshot sets"
 msgstr "Sady snapshotů"
 
 #: src/aptly_gui/web/templates/base.html:17
-#: src/aptly_gui/web/templates/set_detail.html:60
+#: src/aptly_gui/web/templates/set_detail.html:62
 #: src/aptly_gui/web/templates/snapshots.html:2
 #: src/aptly_gui/web/templates/snapshots.html:5
 msgid "Snapshots"
@@ -664,7 +699,7 @@ msgstr "Snapshoty"
 msgid "Snapshots are published as a whole set, never one at a time — a publication combines the components, so publishing a single snapshot is what makes clients stop seeing them separately. The publish action therefore lives on the mirror set."
 msgstr "Snapshoty se publikují jako celá sada, nikdy po jednom — publikace komponenty skládá dohromady, takže publikováním jednotlivého snapshotu klienti přestanou vidět komponenty odděleně. Publikace je proto na sadě mirrorů."
 
-#: src/aptly_gui/web/templates/adopt.html:19
+#: src/aptly_gui/web/templates/adopt.html:20
 msgid "Some suite and component combinations have no mirror. You can still adopt, but an update will stop on the missing ones."
 msgstr "Některé kombinace suite a komponenty nemají mirror. Převzít to jde i tak, ale aktualizace se na chybějících zastaví."
 
@@ -677,20 +712,20 @@ msgid "Start from a known distribution"
 msgstr "Začít od známé distribuce"
 
 #: src/aptly_gui/web/templates/jobs.html:18
-#: src/aptly_gui/web/templates/set_detail.html:106
+#: src/aptly_gui/web/templates/set_detail.html:108
 msgid "Started"
 msgstr "Spuštěno"
 
 #: src/aptly_gui/web/templates/jobs.html:16
 #: src/aptly_gui/web/templates/publications.html:23
-#: src/aptly_gui/web/templates/set_detail.html:59
-#: src/aptly_gui/web/templates/set_detail.html:105
+#: src/aptly_gui/web/templates/set_detail.html:61
+#: src/aptly_gui/web/templates/set_detail.html:107
 #: src/aptly_gui/web/templates/snapshots.html:27
 #: src/aptly_gui/web/templates/users.html:29
 msgid "State"
 msgstr "Stav"
 
-#: src/aptly_gui/web/templates/set_detail.html:28
+#: src/aptly_gui/web/templates/set_detail.html:30
 msgid "Suite"
 msgstr "Suite"
 
@@ -703,15 +738,15 @@ msgstr "Suites"
 msgid "Sync"
 msgstr "Synchronizovat"
 
-#: src/aptly_gui/web/templates/set_detail.html:15
+#: src/aptly_gui/web/templates/set_detail.html:17
 msgid "Sync and snapshot"
 msgstr "Synchronizovat a udělat snapshot"
 
-#: src/aptly_gui/web/templates/set_detail.html:58
+#: src/aptly_gui/web/templates/set_detail.html:60
 msgid "Taken"
 msgstr "Pořízeno"
 
-#: src/aptly_gui/web/app.py:664
+#: src/aptly_gui/web/app.py:694
 msgid "That account is deactivated."
 msgstr "Tenhle účet je deaktivovaný."
 
@@ -723,7 +758,7 @@ msgstr "Tahle položka už neexistuje."
 msgid "That snapshot no longer exists."
 msgstr "Tenhle snapshot už neexistuje."
 
-#: src/aptly_gui/web/app.py:572
+#: src/aptly_gui/web/app.py:602
 msgid "That username and password do not match."
 msgstr "Tohle uživatelské jméno a heslo k sobě nepatří."
 
@@ -735,21 +770,17 @@ msgstr "Tím by tuhle instanci neměl kdo spravovat."
 msgid "The local administrator"
 msgstr "Místní správce"
 
-#: src/aptly_gui/web/app.py:626
+#: src/aptly_gui/web/app.py:656
 msgid "The sign-in attempt could not be verified. Try again."
 msgstr "Pokus o přihlášení se nepodařilo ověřit. Zkus to znovu."
 
-#: src/aptly_gui/web/app.py:867
+#: src/aptly_gui/web/app.py:897
 msgid "The two passwords are not the same."
 msgstr "Hesla se neshodují."
 
 #: src/aptly_gui/web/templates/setup.html:6
 msgid "There are no accounts yet, so nothing is protected. This account will be able to manage everything, including other users."
 msgstr "Zatím neexistuje žádný účet, takže nic není chráněné. Tenhle účet bude moct spravovat všechno včetně ostatních uživatelů."
-
-#: src/aptly_gui/web/templates/base.html:46
-msgid "There is no authentication yet — keep this bound to loopback."
-msgstr "Autentizace zatím není, nech to navázané jen na loopback."
 
 #: src/aptly_gui/web/templates/users.html:6
 msgid "There is one local administrator, configured by environment variables. Everybody else signs in through the identity provider and appears here on their first visit."
@@ -759,11 +790,11 @@ msgstr "Existuje jeden místní správce nastavený proměnnými prostředí. V�
 msgid "These apply to the whole instance. Per-user preferences arrive with authentication."
 msgstr "Platí pro celou instanci. Nastavení pro jednotlivé uživatele přijde s autentizací."
 
-#: src/aptly_gui/web/templates/adopt.html:25
+#: src/aptly_gui/web/templates/adopt.html:26
 msgid "These mirrors do not all use the same filter, so no filter has been pre-filled."
 msgstr "Tyhle mirrory nemají všechny stejný filtr, takže se žádný nepředvyplnil."
 
-#: src/aptly_gui/web/templates/adopt.html:72
+#: src/aptly_gui/web/templates/adopt.html:86
 msgid "These mirrors do not match the convention, either because their name does not end in suite and component or because they carry several components at once. They stay visible and untouched."
 msgstr "Tyhle mirrory neodpovídají konvenci, buď protože jejich název nekončí na suite a komponentu, nebo protože nesou několik komponent najednou. Zůstávají viditelné a nedotčené."
 
@@ -779,7 +810,7 @@ msgstr[2] "Tohle smaže %(count)s snapshotů a pak spustí úklid databáze, aby
 msgid "This deletes the snapshot in aptly and then runs a database cleanup so the disk space actually comes back."
 msgstr "Tohle smaže snapshot v aptly a pak spustí úklid databáze, aby se místo na disku skutečně vrátilo."
 
-#: src/aptly_gui/web/templates/set_detail.html:17
+#: src/aptly_gui/web/templates/set_detail.html:19
 msgid "This downloads updates and freezes them as a snapshot set. Nothing reaches clients until you publish that set below."
 msgstr "Tohle stáhne aktualizace a zmrazí je jako sadu snapshotů. Ke klientům se nic nedostane, dokud tu sadu níže nepublikuješ."
 
@@ -814,7 +845,7 @@ msgid "Total"
 msgstr "Celkem"
 
 #: src/aptly_gui/web/templates/jobs.html:14
-#: src/aptly_gui/web/templates/set_detail.html:104
+#: src/aptly_gui/web/templates/set_detail.html:106
 msgid "Type"
 msgstr "Typ"
 
@@ -829,7 +860,7 @@ msgstr "Nepřeložený text se zobrazí anglicky."
 msgid "Upstream"
 msgstr "Upstream"
 
-#: src/aptly_gui/web/app.py:869
+#: src/aptly_gui/web/app.py:899
 msgid "Use at least 10 characters."
 msgstr "Použij alespoň 10 znaků."
 
@@ -862,7 +893,15 @@ msgstr "Čeká na spuštění…"
 msgid "What is published"
 msgstr "Co je publikované"
 
-#: src/aptly_gui/web/templates/adopt.html:41
+#: src/aptly_gui/web/templates/adopt.html:55
+msgid "Where clients reach this publication, so publishing can check what they actually get."
+msgstr "Kde tuhle publikaci najdou klienti, aby šlo po publikaci ověřit, co skutečně dostanou."
+
+#: src/aptly_gui/web/templates/set_new.html:91
+msgid "Where clients reach this publication. Given it, publishing ends by fetching InRelease the way apt would, instead of trusting aptly's own view."
+msgstr "Kde tuhle publikaci najdou klienti. Když ji vyplníš, publikace na závěr stáhne InRelease stejně jako apt, místo aby věřila jen tomu, co hlásí aptly."
+
+#: src/aptly_gui/web/templates/adopt.html:43
 msgid "Which publication this set feeds. aptly cannot tell us, so confirm it."
 msgstr "Kterou publikaci tahle sada plní. Aptly to neví, takže to potvrď."
 
@@ -870,11 +909,11 @@ msgstr "Kterou publikaci tahle sada plní. Aptly to neví, takže to potvrď."
 msgid "Which snapshots"
 msgstr "Které snapshoty"
 
-#: src/aptly_gui/web/app.py:1055
+#: src/aptly_gui/web/app.py:1092
 msgid "administrator"
 msgstr "správce"
 
-#: src/aptly_gui/web/templates/adopt.html:48
+#: src/aptly_gui/web/templates/adopt.html:62
 msgid "aptly forgets keyrings between updates, so they are stored here and sent again on every sync. Use the combined archive keyring; per-release ones often fail to verify."
 msgstr "Aptly si keyringy mezi aktualizacemi nepamatuje, proto se ukládají sem a posílají se znovu při každém syncu. Použij kombinovaný archivní keyring, ty per-release často neověří podpis."
 
@@ -882,11 +921,11 @@ msgstr "Aptly si keyringy mezi aktualizacemi nepamatuje, proto se ukládají sem
 msgid "aptly-gui"
 msgstr "aptly-gui"
 
-#: src/aptly_gui/web/app.py:1040
+#: src/aptly_gui/web/app.py:1077
 msgid "cleanup"
 msgstr "úklid"
 
-#: src/aptly_gui/web/templates/set_detail.html:70
+#: src/aptly_gui/web/templates/set_detail.html:72
 msgid "complete"
 msgstr "kompletní"
 
@@ -894,7 +933,7 @@ msgstr "kompletní"
 msgid "configured"
 msgstr "z konfigurace"
 
-#: src/aptly_gui/web/app.py:1036
+#: src/aptly_gui/web/app.py:1073
 msgid "create mirrors"
 msgstr "založení mirrorů"
 
@@ -902,11 +941,11 @@ msgstr "založení mirrorů"
 msgid "deactivated"
 msgstr "deaktivovaný"
 
-#: src/aptly_gui/web/app.py:1039
+#: src/aptly_gui/web/app.py:1076
 msgid "discard snapshots"
 msgstr "zahození snapshotů"
 
-#: src/aptly_gui/web/app.py:1049
+#: src/aptly_gui/web/app.py:1086
 msgid "failed"
 msgstr "chyba"
 
@@ -918,15 +957,15 @@ msgstr "poskytovatel identity"
 msgid "in use"
 msgstr "používá se"
 
-#: src/aptly_gui/web/templates/set_detail.html:72
+#: src/aptly_gui/web/templates/set_detail.html:74
 msgid "incomplete"
 msgstr "nekompletní"
 
-#: src/aptly_gui/web/app.py:1050
+#: src/aptly_gui/web/app.py:1087
 msgid "interrupted"
 msgstr "přerušeno"
 
-#: src/aptly_gui/web/app.py:995
+#: src/aptly_gui/web/app.py:1032
 msgid "just now"
 msgstr "před chvílí"
 
@@ -953,7 +992,7 @@ msgstr[1] "sady mirrorů"
 msgstr[2] "sad mirrorů"
 
 #: src/aptly_gui/web/templates/dashboard.html:88
-#: src/aptly_gui/web/templates/set_detail.html:42
+#: src/aptly_gui/web/templates/set_detail.html:44
 msgid "missing"
 msgstr "chybí"
 
@@ -962,7 +1001,7 @@ msgstr "chybí"
 msgid "missing <code>%(name)s</code>"
 msgstr "chybí <code>%(name)s</code>"
 
-#: src/aptly_gui/web/app.py:992 src/aptly_gui/web/templates/dashboard.html:123
+#: src/aptly_gui/web/app.py:1029 src/aptly_gui/web/templates/dashboard.html:123
 #: src/aptly_gui/web/templates/mirrors.html:39
 msgid "never"
 msgstr "nikdy"
@@ -971,15 +1010,15 @@ msgstr "nikdy"
 msgid "ok"
 msgstr "ok"
 
-#: src/aptly_gui/web/app.py:1054
+#: src/aptly_gui/web/app.py:1091
 msgid "operator"
 msgstr "operátor"
 
-#: src/aptly_gui/web/app.py:1051
+#: src/aptly_gui/web/app.py:1088
 msgid "pending"
 msgstr "čeká"
 
-#: src/aptly_gui/web/templates/set_detail.html:40
+#: src/aptly_gui/web/templates/set_detail.html:42
 msgid "present"
 msgstr "je"
 
@@ -990,7 +1029,7 @@ msgstr[0] "publikace"
 msgstr[1] "publikace"
 msgstr[2] "publikací"
 
-#: src/aptly_gui/web/app.py:1038
+#: src/aptly_gui/web/app.py:1075
 msgid "publish"
 msgstr "publikace"
 
@@ -998,7 +1037,7 @@ msgstr "publikace"
 msgid "published"
 msgstr "publikovaný"
 
-#: src/aptly_gui/web/app.py:1046
+#: src/aptly_gui/web/app.py:1083
 msgid "queued"
 msgstr "ve frontě"
 
@@ -1006,11 +1045,11 @@ msgstr "ve frontě"
 msgid "ready to publish"
 msgstr "připraven k publikaci"
 
-#: src/aptly_gui/web/app.py:1047
+#: src/aptly_gui/web/app.py:1084
 msgid "running"
 msgstr "běží"
 
-#: src/aptly_gui/web/app.py:1052
+#: src/aptly_gui/web/app.py:1089
 msgid "skipped"
 msgstr "přeskočeno"
 
@@ -1025,11 +1064,11 @@ msgstr[2] "snapshotů"
 msgid "snapshot missing"
 msgstr "snapshot chybí"
 
-#: src/aptly_gui/web/app.py:1048
+#: src/aptly_gui/web/app.py:1085
 msgid "succeeded"
 msgstr "úspěch"
 
-#: src/aptly_gui/web/app.py:1037
+#: src/aptly_gui/web/app.py:1074
 msgid "sync and snapshot"
 msgstr "sync a snapshot"
 
@@ -1049,7 +1088,7 @@ msgstr[0] "nepublikovaný snapshot"
 msgstr[1] "nepublikované snapshoty"
 msgstr[2] "nepublikovaných snapshotů"
 
-#: src/aptly_gui/web/app.py:1053
+#: src/aptly_gui/web/app.py:1090
 msgid "viewer"
 msgstr "divák"
 

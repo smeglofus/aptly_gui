@@ -86,6 +86,7 @@ def _debian_security(code: str, version: str) -> Preset:
 
 
 PRESETS: list[Preset] = [
+    _ubuntu("resolute", "26.04 LTS"),
     _ubuntu("noble", "24.04 LTS"),
     _ubuntu("jammy", "22.04 LTS"),
     _ubuntu("focal", "20.04 LTS"),

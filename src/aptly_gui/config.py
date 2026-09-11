@@ -23,6 +23,9 @@ class Settings:
     # The one local account. Everyone else signs in through the provider.
     admin_username: str = ""
     admin_password: str = ""
+    # A sync stops rather than filling the disk it shares with the published tree.
+    safety_margin_gb: int = 30
+    safety_margin_percent: int = 15
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -41,4 +44,10 @@ class Settings:
             in ("1", "true", "yes"),
             admin_username=os.environ.get("APTLY_GUI_ADMIN_USERNAME", cls.admin_username),
             admin_password=os.environ.get("APTLY_GUI_ADMIN_PASSWORD", cls.admin_password),
+            safety_margin_gb=int(
+                os.environ.get("APTLY_GUI_SAFETY_MARGIN_GB", cls.safety_margin_gb)
+            ),
+            safety_margin_percent=int(
+                os.environ.get("APTLY_GUI_SAFETY_MARGIN_PERCENT", cls.safety_margin_percent)
+            ),
         )

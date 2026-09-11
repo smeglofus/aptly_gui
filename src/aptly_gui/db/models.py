@@ -147,6 +147,12 @@ class MirrorSet(Base):
     keyrings: Mapped[list[str]] = mapped_column(JSON, default=list)
     filter: Mapped[str | None] = mapped_column(String(512), default=None)
     publish_prefix: Mapped[str] = mapped_column(String(128))
+    # aptly's own name for a filesystem publish target, e.g. "prod". Sent as
+    # filesystem:<endpoint>:<prefix>; a bare name makes aptly panic and exit.
+    publish_endpoint: Mapped[str | None] = mapped_column(String(128), default=None)
+    # Where a client reaches the published tree, for checking what they actually get.
+    public_url: Mapped[str | None] = mapped_column(String(512), default=None)
+    mirror_pattern: Mapped[str] = mapped_column(String(64), default="{set}-{suite}-{component}")
     signing_key: Mapped[str | None] = mapped_column(String(128), default=None)
     adopted: Mapped[bool] = mapped_column(default=False)
     revision: Mapped[int] = mapped_column(Integer, default=1)
@@ -158,7 +164,14 @@ class MirrorSet(Base):
     )
 
     def mirror_name(self, suite: str, component: str) -> str:
-        return f"{self.name}-{suite}-{component}"
+        return self.mirror_pattern.format(set=self.name, suite=suite, component=component)
+
+    @property
+    def publish_target(self) -> str:
+        """The prefix as aptly's API wants it, including the storage scheme."""
+        if self.publish_endpoint:
+            return f"filesystem:{self.publish_endpoint}:{self.publish_prefix}"
+        return self.publish_prefix
 
     @property
     def expected_mirrors(self) -> list[str]:

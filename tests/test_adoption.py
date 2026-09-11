@@ -23,7 +23,12 @@ def mirror(name: str, distribution: str, components: list[str], **kwargs: object
 def test_split_uses_metadata_not_dash_counting() -> None:
     """Both set names and suites contain dashes, so the split cannot be positional."""
     result = split_mirror_name(mirror("ubuntu-noble-noble-updates-main", "noble-updates", ["main"]))
-    assert result == ("ubuntu-noble", "noble-updates", "main")
+    assert result is not None
+    assert (result.set_name, result.suite, result.component) == (
+        "ubuntu-noble",
+        "noble-updates",
+        "main",
+    )
 
 
 def test_split_rejects_multi_component_mirror() -> None:

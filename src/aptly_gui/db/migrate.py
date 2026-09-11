@@ -21,6 +21,7 @@ ADOPTION_MARKERS: list[tuple[str, str, str | None]] = [
     ("1d98f4a90784", "job_steps", "total_bytes"),
     ("2595a4d32cad", "jobs", "expected_steps"),
     ("f8cd439d47f7", "users", None),
+    ("a2df56007c76", "mirror_sets", "mirror_pattern"),
 ]
 
 

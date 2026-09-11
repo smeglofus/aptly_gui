@@ -48,7 +48,15 @@ from ..db import (
     create_session_factory,
     upgrade_database,
 )
-from ..services import PRESETS, JobRunner, get_preset, propose_sets
+from ..services import (
+    PATTERNS,
+    PRESETS,
+    SET_SUITE_COMPONENT,
+    JobRunner,
+    Margin,
+    get_preset,
+    propose_sets,
+)
 from .state import StateCache
 
 HERE = Path(__file__).parent
@@ -95,7 +103,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.sessions = sessions
         app.state.cache = StateCache(client, refresh_seconds=settings.refresh_seconds)
         app.state.language = await _stored_language(app, settings)
-        app.state.runner = JobRunner(client, sessions)
+        app.state.runner = JobRunner(
+            client,
+            sessions,
+            margin=Margin(
+                gigabytes=settings.safety_margin_gb,
+                percent=settings.safety_margin_percent,
+            ),
+        )
         await app.state.runner.start()
         try:
             yield
@@ -311,7 +326,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             request,
             "set_new.html",
             page="sets",
-            form=chosen.as_form() if chosen else _blank_form(),
+            form={**_blank_form(), **(chosen.as_form() if chosen else {})},
             presets=PRESETS,
             chosen=chosen,
             error=error,
@@ -329,6 +344,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         keyrings: str = Form(""),
         signing_key: str = Form(""),
         filter: str = Form(""),
+        publish_endpoint: str = Form(""),
+        public_url: str = Form(""),
+        mirror_pattern: str = Form(SET_SUITE_COMPONENT),
     ) -> Response:
         form = {
             "name": name,
@@ -340,6 +358,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "keyrings": keyrings,
             "signing_key": signing_key,
             "filter": filter,
+            "publish_endpoint": publish_endpoint,
+            "public_url": public_url,
+            "mirror_pattern": mirror_pattern,
         }
         async with request.app.state.sessions() as session:
             taken = (
@@ -364,6 +385,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 keyrings=_split(keyrings),
                 filter=filter or None,
                 publish_prefix=publish_prefix,
+                publish_endpoint=publish_endpoint or None,
+                public_url=public_url.rstrip("/") or None,
+                mirror_pattern=_valid_pattern(mirror_pattern),
                 signing_key=signing_key or None,
                 adopted=False,
             )
@@ -400,6 +424,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         keyrings: str = Form(""),
         signing_key: str = Form(""),
         filter: str = Form(""),
+        publish_endpoint: str = Form(""),
+        public_url: str = Form(""),
+        mirror_pattern: str = Form(SET_SUITE_COMPONENT),
     ) -> RedirectResponse:
         async with request.app.state.sessions() as session:
             mirror_set = MirrorSet(
@@ -411,6 +438,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 keyrings=_split(keyrings),
                 filter=filter or None,
                 publish_prefix=publish_prefix,
+                publish_endpoint=publish_endpoint or None,
+                public_url=public_url.rstrip("/") or None,
+                mirror_pattern=_valid_pattern(mirror_pattern),
                 signing_key=signing_key or None,
                 adopted=True,
             )
@@ -940,6 +970,10 @@ async def _resolve_secret_key(sessions: Any, settings: Settings) -> str:
         return str(row.value)
 
 
+def _valid_pattern(value: str) -> str:
+    return value if value in PATTERNS else SET_SUITE_COMPONENT
+
+
 def _valid_role(value: str) -> str:
     try:
         return UserRole(value)
@@ -980,6 +1014,9 @@ def _blank_form() -> dict[str, str]:
         "keyrings": "",
         "signing_key": "",
         "filter": "",
+        "publish_endpoint": "",
+        "public_url": "",
+        "mirror_pattern": SET_SUITE_COMPONENT,
     }
 
 

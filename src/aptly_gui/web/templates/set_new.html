@@ -78,6 +78,28 @@
     <input type="text" id="publish_prefix" name="publish_prefix" value="{{ form.publish_prefix }}" required>
   </div>
 
+
+  <div class="field">
+    <label for="publish_endpoint">{% trans %}Publish endpoint{% endtrans %}</label>
+    <input type="text" id="publish_endpoint" name="publish_endpoint" value="{{ form.publish_endpoint }}" placeholder="prod">
+    <p class="hint">{% trans %}A named filesystem endpoint from aptly's config. Leave empty for the default one.{% endtrans %}</p>
+  </div>
+
+  <div class="field">
+    <label for="public_url">{% trans %}Public URL{% endtrans %}</label>
+    <input type="text" id="public_url" name="public_url" size="60" value="{{ form.public_url }}" placeholder="http://mirror.example.com/ubuntu">
+    <p class="hint">{% trans %}Where clients reach this publication. Given it, publishing ends by fetching InRelease the way apt would, instead of trusting aptly's own view.{% endtrans %}</p>
+  </div>
+
+  <div class="field">
+    <label for="mirror_pattern">{% trans %}Mirror naming{% endtrans %}</label>
+    <select name="mirror_pattern" id="mirror_pattern">
+      <option value="{set}-{suite}-{component}" {{ 'selected' if form.mirror_pattern == '{set}-{suite}-{component}' }}>{set}-{suite}-{component}</option>
+      <option value="{suite}-{component}" {{ 'selected' if form.mirror_pattern == '{suite}-{component}' }}>{suite}-{component}</option>
+    </select>
+    <p class="hint">{% trans %}How this set's mirrors are named in aptly. The set prefix is worth having when one aptly holds several upstreams, and redundant when the suite already identifies the release.{% endtrans %}</p>
+  </div>
+
   <div class="field">
     <label for="signing_key">{% trans %}Signing key{% endtrans %}</label>
     <input type="text" id="signing_key" name="signing_key" value="{{ form.signing_key }}">

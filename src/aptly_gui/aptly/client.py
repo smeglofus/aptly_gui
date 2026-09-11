@@ -187,6 +187,17 @@ class AptlyClient:
         params = {"force": 1} if force else None
         await self._request("DELETE", f"/api/snapshots/{name}", params=params)
 
+    async def mirror_size_bytes(self, name: str) -> int:
+        """Total size of what a mirror currently holds.
+
+        aptly only reports the bytes an update will fetch once it has planned one, so
+        this is what the set occupies now rather than what the next sync will need.
+        """
+        packages = await self._request(
+            "GET", f"/api/mirrors/{name}/packages", params={"format": "details"}
+        )
+        return sum(int(package.get("Size", 0) or 0) for package in packages)
+
     async def snapshot_diff(self, left: str, right: str) -> list[dict[str, Any]]:
         return list(await self._request("GET", f"/api/snapshots/{left}/diff/{right}"))
 

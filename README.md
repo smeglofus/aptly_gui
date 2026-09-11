@@ -55,6 +55,18 @@ snapshot set explicitly — and publishing an older set is exactly what a rollba
 
 Only one write job runs at a time, because aptly has a single database.
 
+A sync refuses to start when free space is under the configured margin, and gives up
+mid-download once aptly reports it is fetching more than will fit — the disk it fills is
+the one the published tree lives on.
+
+Mirrors can be named `{set}-{suite}-{component}` or `{suite}-{component}`; adoption works
+out which a set uses and records it. Publishing to a named filesystem endpoint is supported
+and sent as `filesystem:<endpoint>:<prefix>` — a bare endpoint name makes aptly panic and
+take the whole API process down.
+
+Given a public URL for a set, publishing finishes by fetching `InRelease` over HTTP and
+checking it is signed, because a successful API call only proves aptly wrote files.
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -67,6 +79,8 @@ Only one write job runs at a time, because aptly has a single database.
 | `APTLY_GUI_SECRET_KEY` | generated | Signs session cookies; generated and stored on first run |
 | `APTLY_GUI_SESSION_MAX_AGE` | `1209600` | Seconds a sign-in lasts |
 | `APTLY_GUI_SECURE_COOKIES` | `false` | Set when serving over HTTPS |
+| `APTLY_GUI_SAFETY_MARGIN_GB` | `30` | A sync refuses to start below this much free space |
+| `APTLY_GUI_SAFETY_MARGIN_PERCENT` | `15` | …or below this share of the disk, whichever is larger |
 
 ## Signing in
 

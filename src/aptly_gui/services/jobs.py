@@ -20,6 +20,8 @@ from ..db import (
     SnapshotSetState,
     StepState,
 )
+from .space import Margin, check
+from .verify import check_release
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +59,8 @@ def _expected_steps(job_type: JobType, mirror_set: MirrorSet | None) -> int:
     if job_type is JobType.UPDATE:
         return 1 + mirrors * 2  # preflight, then a sync and a snapshot per mirror
     if job_type is JobType.SWITCH:
-        return len(mirror_set.suites) + 1  # one publish per suite, then verify
+        # one publish per suite, then verify, then the client-side check
+        return len(mirror_set.suites) + (2 if mirror_set.public_url else 1)
     return 1
 
 
@@ -91,10 +94,12 @@ class JobRunner:
         session_factory: async_sessionmaker[AsyncSession],
         *,
         poll_interval: float = 2.0,
+        margin: Margin | None = None,
     ) -> None:
         self._client = client
         self._sessions = session_factory
         self._poll = poll_interval
+        self._margin = margin or Margin(gigabytes=30, percent=15)
         self._queue: asyncio.Queue[int] = asyncio.Queue()
         self._worker: asyncio.Task[None] | None = None
         self._next_position = 0
@@ -269,6 +274,7 @@ class JobRunner:
                 step.total_packages = progress.total_packages
                 step.remaining_packages = progress.remaining_packages
                 await session.commit()
+                await self._guard_disk(progress.remaining_bytes)
             await asyncio.sleep(self._poll)
 
         output = await self._client.task_output(task_id)
@@ -310,7 +316,16 @@ class JobRunner:
         if missing:
             await self._finish_step(session, step, StepState.FAILED, "\n".join(missing))
             raise AptlyError(f"mirrors missing in aptly: {', '.join(missing)}")
-        await self._finish_step(session, step, StepState.SUCCEEDED)
+
+        # Stop before downloading rather than after filling the disk the published
+        # tree lives on.
+        storage = await self._client.storage()
+        verdict = check(storage, self._margin)
+        detail = f"free {verdict.free_mb} MiB, margin requires {verdict.required_mb} MiB"
+        if not verdict.ok:
+            await self._finish_step(session, step, StepState.FAILED, detail)
+            raise AptlyError(f"not enough free disk space: {detail}")
+        await self._finish_step(session, step, StepState.SUCCEEDED, detail)
 
         stamp = snapshot_stamp()
         snapshot_set = SnapshotSet(
@@ -347,6 +362,16 @@ class JobRunner:
 
         snapshot_set.state = SnapshotSetState.COMPLETE
         await session.commit()
+
+    async def _guard_disk(self, remaining_bytes: int) -> None:
+        """Give up while the download is still in flight if it will not fit."""
+        storage = await self._client.storage()
+        verdict = check(storage, self._margin, download_mb=remaining_bytes // (1024 * 1024))
+        if not verdict.ok:
+            raise AptlyError(
+                "stopping the sync: "
+                f"{verdict.shortfall_mb} MiB short of the configured safety margin"
+            )
 
     # --- discard: delete snapshots and actually reclaim the space ---
 
@@ -399,17 +424,17 @@ class JobRunner:
                 component: target.snapshots[mirror_set.mirror_name(suite, component)]
                 for component in mirror_set.components
             }
-            key = (mirror_set.publish_prefix, suite)
+            key = (mirror_set.publish_prefix, suite)  # aptly reports the bare prefix back
             step = await self._add_step(
                 session, job, f"Publish {mirror_set.publish_prefix}/{suite}"
             )
             if key in published:
                 task = await self._client.switch_published(
-                    mirror_set.publish_prefix, suite, sources, signing=signing
+                    mirror_set.publish_target, suite, sources, signing=signing
                 )
             else:
                 task = await self._client.publish_snapshots(
-                    mirror_set.publish_prefix,
+                    mirror_set.publish_target,
                     suite,
                     sources,
                     architectures=list(mirror_set.architectures),
@@ -436,6 +461,19 @@ class JobRunner:
             await self._finish_step(session, step, StepState.FAILED, "\n".join(problems))
             raise AptlyError("; ".join(problems))
         await self._finish_step(session, step, StepState.SUCCEEDED)
+
+        if mirror_set.public_url:
+            step = await self._add_step(session, job, "Check as a client")
+            checks = [
+                await check_release(mirror_set.public_url, suite)
+                for suite in order_suites(list(mirror_set.suites))
+            ]
+            report = "\n".join(item.describe() for item in checks)
+            failed = [item for item in checks if not item.ok]
+            if failed:
+                await self._finish_step(session, step, StepState.FAILED, report)
+                raise AptlyError(failed[0].describe())
+            await self._finish_step(session, step, StepState.SUCCEEDED, report)
 
 
 async def reconcile(

@@ -12,6 +12,7 @@ def _mirror_set(**overrides: object) -> MirrorSet:
         "components": ["main", "universe"],
         "architectures": ["amd64"],
         "publish_prefix": "ubuntu",
+        "mirror_pattern": "{set}-{suite}-{component}",
     }
     return MirrorSet(**{**defaults, **overrides})
 
