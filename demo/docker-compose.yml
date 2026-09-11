@@ -1,0 +1,16 @@
+services:
+  aptly:
+    build: .
+    image: aptly-gui-demo/aptly:trixie
+    ports:
+      - "127.0.0.1:${APTLY_API_PORT:-8079}:8080"
+    volumes:
+      - aptly-data:/var/lib/aptly
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  aptly-data:
