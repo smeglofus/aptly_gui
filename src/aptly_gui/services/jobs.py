@@ -215,6 +215,9 @@ class JobRunner:
             except Exception as exc:
                 job.state = JobState.FAILED
                 job.error = str(exc) or exc.__class__.__name__
+                # Whichever step was in flight is the one that failed; without this
+                # it keeps saying "running" long after the job gave up.
+                await self._fail_running_steps(session, job.id, job.error)
                 log.warning("job %s failed: %s", job_id, job.error)
             finally:
                 job.finished_at = datetime.now(UTC)
@@ -228,6 +231,25 @@ class JobRunner:
                     )
                 )
                 await session.commit()
+
+    async def _fail_running_steps(self, session: AsyncSession, job_id: int, error: str) -> None:
+        running = (
+            (
+                await session.execute(
+                    select(JobStep).where(
+                        JobStep.job_id == job_id, JobStep.state == StepState.RUNNING
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for step in running:
+            step.state = StepState.FAILED
+            step.finished_at = datetime.now(UTC)
+            if not step.output_tail:
+                step.output_tail = error[:OUTPUT_TAIL]
+        await session.commit()
 
     async def _add_step(self, session: AsyncSession, job: Job, description: str) -> JobStep:
         # Position comes from a counter rather than len(job.steps): touching the

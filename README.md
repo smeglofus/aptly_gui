@@ -67,6 +67,11 @@ take the whole API process down.
 Given a public URL for a set, publishing finishes by fetching `InRelease` over HTTP and
 checking it is signed, because a successful API call only proves aptly wrote files.
 
+The keyring is read by aptly, not by this service, so it has to exist on the aptly host —
+mirroring Ubuntu from a Debian-based aptly needs the `ubuntu-keyring` package installed
+there. Without it aptly spends about a minute failing and then reports only `exit status
+2`, so that message and a few others are shown with an explanation of what to change.
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -79,6 +84,7 @@ checking it is signed, because a successful API call only proves aptly wrote fil
 | `APTLY_GUI_SECRET_KEY` | generated | Signs session cookies; generated and stored on first run |
 | `APTLY_GUI_SESSION_MAX_AGE` | `1209600` | Seconds a sign-in lasts |
 | `APTLY_GUI_SECURE_COOKIES` | `false` | Set when serving over HTTPS |
+| `APTLY_GUI_CREATE_TIMEOUT` | `300` | Seconds to wait while aptly verifies an upstream Release |
 | `APTLY_GUI_SAFETY_MARGIN_GB` | `30` | A sync refuses to start below this much free space |
 | `APTLY_GUI_SAFETY_MARGIN_PERCENT` | `15` | …or below this share of the disk, whichever is larger |
 

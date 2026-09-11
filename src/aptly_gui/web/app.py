@@ -84,6 +84,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             settings.aptly_url,
             socket_path=settings.aptly_socket,
             timeout=settings.request_timeout,
+            create_timeout=settings.create_timeout,
         )
         engine = create_engine(settings.database_url)
         await upgrade_database(engine)

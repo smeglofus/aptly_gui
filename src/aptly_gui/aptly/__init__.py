@@ -1,4 +1,5 @@
 from .client import AptlyClient, AptlyError, TaskFailed, encode_prefix
+from .errors import explain, with_explanation
 from .models import (
     Mirror,
     MirrorSpec,
@@ -27,4 +28,6 @@ __all__ = [
     "TaskProgress",
     "TaskState",
     "encode_prefix",
+    "explain",
+    "with_explanation",
 ]

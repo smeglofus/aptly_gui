@@ -3,6 +3,7 @@ FROM debian:trixie-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       aptly gnupg ca-certificates bzip2 xz-utils curl \
+      ubuntu-keyring \
  && rm -rf /var/lib/apt/lists/*
 
 COPY aptly.conf /etc/aptly.conf

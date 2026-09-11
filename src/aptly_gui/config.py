@@ -14,6 +14,7 @@ class Settings:
     database_url: str = "sqlite+aiosqlite:///./aptly-gui.db"
     refresh_seconds: int = 15
     request_timeout: float = 30.0
+    create_timeout: float = 300.0
     default_language: str = DEFAULT_LANGUAGE
     # Empty means "generate one and keep it in the database", so a fresh install
     # needs no configuration and a restart does not sign everyone out.
@@ -37,6 +38,7 @@ class Settings:
             database_url=os.environ.get("APTLY_GUI_DATABASE_URL", cls.database_url),
             refresh_seconds=int(os.environ.get("APTLY_GUI_REFRESH_SECONDS", cls.refresh_seconds)),
             request_timeout=float(os.environ.get("APTLY_GUI_TIMEOUT", cls.request_timeout)),
+            create_timeout=float(os.environ.get("APTLY_GUI_CREATE_TIMEOUT", cls.create_timeout)),
             default_language=os.environ.get("APTLY_GUI_LANGUAGE", cls.default_language),
             secret_key=os.environ.get("APTLY_GUI_SECRET_KEY", cls.secret_key),
             session_max_age=int(os.environ.get("APTLY_GUI_SESSION_MAX_AGE", cls.session_max_age)),

@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from .errors import with_explanation
 from .models import (
     Mirror,
     MirrorSpec,
@@ -53,6 +54,7 @@ class AptlyClient:
         *,
         socket_path: str | None = None,
         timeout: float = 30.0,
+        create_timeout: float = 300.0,
     ) -> None:
         transport = httpx.AsyncHTTPTransport(uds=socket_path) if socket_path else None
         self._http = httpx.AsyncClient(
@@ -60,6 +62,10 @@ class AptlyClient:
             transport=transport,
             timeout=timeout,
         )
+        # Creating a mirror is not a quick call: aptly fetches and verifies the
+        # upstream Release first, which took 50 seconds against archive.ubuntu.com.
+        # There is no async form — ?_async=1 is accepted and ignored.
+        self._create_timeout = create_timeout
 
     async def __aenter__(self) -> AptlyClient:
         return self
@@ -76,9 +82,14 @@ class AptlyClient:
         await self._http.aclose()
 
     async def _request(self, method: str, path: str, **kwargs: Any) -> Any:
-        response = await self._http.request(method, path, **kwargs)
+        try:
+            response = await self._http.request(method, path, **kwargs)
+        except httpx.TimeoutException as exc:
+            raise AptlyError(with_explanation(f"{type(exc).__name__}: {exc}")) from exc
         if response.status_code >= 400:
-            raise AptlyError(_error_message(response), status_code=response.status_code)
+            raise AptlyError(
+                with_explanation(_error_message(response)), status_code=response.status_code
+            )
         if not response.content:
             return None
         return response.json()
@@ -150,7 +161,10 @@ class AptlyClient:
         return Mirror.parse(await self._request("GET", f"/api/mirrors/{name}"))
 
     async def create_mirror(self, spec: MirrorSpec) -> Mirror:
-        return Mirror.parse(await self._request("POST", "/api/mirrors", json=spec.payload()))
+        payload = await self._request(
+            "POST", "/api/mirrors", json=spec.payload(), timeout=self._create_timeout
+        )
+        return Mirror.parse(payload)
 
     async def update_mirror(self, spec: MirrorSpec) -> Task:
         """Sync a mirror, taking the whole spec because aptly forgets `Keyrings`."""
