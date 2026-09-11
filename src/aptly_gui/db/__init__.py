@@ -1,3 +1,4 @@
+from .migrate import current_revision, upgrade_database
 from .models import (
     AppSetting,
     AuditEntry,
@@ -26,7 +27,9 @@ __all__ = [
     "SnapshotSetState",
     "StepState",
     "create_all",
+    "current_revision",
     "create_engine",
     "create_session_factory",
     "session_scope",
+    "upgrade_database",
 ]

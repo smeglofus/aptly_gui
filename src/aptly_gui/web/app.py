@@ -23,9 +23,9 @@ from ..db import (
     JobType,
     MirrorSet,
     SnapshotSetState,
-    create_all,
     create_engine,
     create_session_factory,
+    upgrade_database,
 )
 from ..services import JobRunner, propose_sets
 from .state import StateCache
@@ -57,7 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             timeout=settings.request_timeout,
         )
         engine = create_engine(settings.database_url)
-        await create_all(engine)
+        await upgrade_database(engine)
         sessions = create_session_factory(engine)
 
         app.state.settings = settings

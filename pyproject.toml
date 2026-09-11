@@ -33,6 +33,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 "aptly_gui.web" = ["templates/*.html", "static/*"]
 "aptly_gui.i18n" = ["locales/*/LC_MESSAGES/*.po", "locales/*/LC_MESSAGES/*.mo"]
+"aptly_gui.migrations" = ["*.py", "*.mako", "README", "versions/*.py"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
