@@ -15,6 +15,10 @@
 </form>
 <p class="lead">{% trans %}This downloads updates and freezes them as a snapshot set. Nothing reaches clients until you publish that set below.{% endtrans %}</p>
 
+{% if not snapshot_sets %}
+<div class="notice">{% trans %}Nothing has been snapshotted yet, so there is nothing to publish. Run a sync first and a Publish button will appear against the snapshot set it creates.{% endtrans %}</div>
+{% endif %}
+
 <h2>{% trans %}Mirrors{% endtrans %}</h2>
 <div class="scroll">
   <table>

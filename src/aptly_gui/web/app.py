@@ -27,7 +27,7 @@ from ..db import (
     create_session_factory,
     upgrade_database,
 )
-from ..services import JobRunner, propose_sets
+from ..services import PRESETS, JobRunner, get_preset, propose_sets
 from .state import StateCache
 
 HERE = Path(__file__).parent
@@ -122,8 +122,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return await render(request, "sets.html", page="sets", sets=await _load_sets(request))
 
     @app.get("/sets/new", response_class=HTMLResponse)
-    async def new_set_form(request: Request, error: str | None = None) -> HTMLResponse:
-        return await render(request, "set_new.html", page="sets", form=_blank_form(), error=error)
+    async def new_set_form(
+        request: Request, preset: str | None = None, error: str | None = None
+    ) -> HTMLResponse:
+        chosen = get_preset(preset)
+        return await render(
+            request,
+            "set_new.html",
+            page="sets",
+            form=chosen.as_form() if chosen else _blank_form(),
+            presets=PRESETS,
+            chosen=chosen,
+            error=error,
+        )
 
     @app.post("/sets/new")
     async def new_set_submit(
@@ -159,6 +170,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "set_new.html",
                     page="sets",
                     form=form,
+                    presets=PRESETS,
+                    chosen=None,
                     error=i18n.gettext("A mirror set with this name already exists."),
                 )
             mirror_set = MirrorSet(

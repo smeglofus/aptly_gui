@@ -9,6 +9,23 @@
 <div class="alert"><strong>{% trans %}Could not create the set{% endtrans %}</strong><p>{{ error }}</p></div>
 {% endif %}
 
+<section class="panel">
+  <h2 style="margin-top:0">{% trans %}Start from a known distribution{% endtrans %}</h2>
+  <p class="hint">{% trans %}Fills the form in below. Everything stays editable afterwards.{% endtrans %}</p>
+  <div class="presets">
+    {% for preset in presets %}
+      <a class="button {{ 'on' if chosen and chosen.id == preset.id }}"
+         href="/sets/new?preset={{ preset.id }}">{{ preset.label }}</a>
+    {% endfor %}
+    <a class="button {{ 'on' if not chosen }}" href="/sets/new">{% trans %}Blank{% endtrans %}</a>
+  </div>
+  {% if chosen and chosen.note == 'security' %}
+  <div class="notice" style="margin-top:14px; margin-bottom:0">
+    {% trans %}Debian keeps security updates on a separate host, so they cannot be part of this set. Create the matching security set as well — that is how Debian's own sources.list is arranged too.{% endtrans %}
+  </div>
+  {% endif %}
+</section>
+
 <form method="post" action="/sets/new" class="panel">
   <div class="field">
     <label for="name">{% trans %}Set name{% endtrans %}</label>

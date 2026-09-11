@@ -400,3 +400,9 @@ footer {
   overflow-wrap: anywhere;
 }
 .step-output pre code { background: transparent; border: 0; padding: 0; }
+
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.presets .button { text-decoration: none; display: inline-block; }
+.presets .button.on { background: var(--accent); border-color: var(--accent-strong); color: var(--accent-contrast); }
+a.button { text-decoration: none; display: inline-block; }
+a.button:hover { text-decoration: none; }
